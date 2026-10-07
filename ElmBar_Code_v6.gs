@@ -152,10 +152,9 @@ function onOpen() {
       .addItem("Send Test Entry", "sendTestEntryFromMenu")
       .addItem("Email Form Link to Managers", "emailFormLinkToManagers")
       .addSeparator()
-      .addItem("Set Form to Tonight's Bottles", "rebuildNightlyForm")
-      .addItem("Update Bartender Dropdown", "syncBartenderDropdown")
-      .addItem("Send Reminder Now (if count missing)", "sendNightlyReminder")
-      .addItem("Install Nightly Triggers", "installNightlyTriggers")
+      .addItem("Set Form to 6 Levels", "applySixLevels")
+      .addItem("Send Bartender Reminder Now", "sendNightlyReminder")
+      .addItem("Install 9:30pm Reminder", "installReminderTrigger")
       .addToUi();
   } catch (e) {
     // Simple triggers cannot always show UI; never let this throw.
@@ -390,13 +389,12 @@ function listGridCoverage() {
 // changing the parser.
 const GRID_LEVEL_PREFIX = "Stock Level";
 const GRID_UNOPENED_PREFIX = "Unopened Count";
-// v6: six columns, not nine, and deliberately UNEVENLY spaced.
-// Nine needed a sideways scroll on a phone for every row. But an even
-// five was wrong too: the reorder decision lives entirely at the bottom
-// of the bottle. Nobody orders differently for 3/4 versus 5/8; everybody
-// orders differently for 1/8 versus 1/4. So the scale is fine near empty
-// and coarse up top - and it has no comfortable middle button to tap.
-// LEVEL_TO_FRACTION still knows all nine so earlier weeks still read.
+// v6: six columns, not nine, and deliberately unevenly spaced. Nine
+// needed a sideways scroll on a phone for every row. The reorder
+// decision lives at the bottom of the bottle - nobody orders
+// differently for 3/4 versus 5/8, everybody does for 1/8 versus 1/4 -
+// so the scale is fine near empty and coarse above half.
+// LEVEL_TO_FRACTION still knows all nine, so earlier weeks still read.
 const GRID_LEVEL_COLUMNS = ["E", "1/8", "1/4", "1/2", "3/4", "Full"];
 const GRID_UNOPENED_COLUMNS = ["0", "1", "2", "3", "4", "5", "6+"];
 // Google's grids get cramped on a phone past ~8 rows, so long categories
@@ -1169,10 +1167,7 @@ function onFormSubmit(e) {
       }
     }
 
-    // v6: a count where nearly every bottle reads the same is not a count.
-    // 09/18 arrived with all 44 bottles at 1/2 and the word "Same" typed in
-    // every backup field. It gets recorded - throwing it away would just
-    // hide the behaviour - but it is flagged so nobody treats it as real.
+    // v6: flag a submission where nearly every bottle reads the same.
     var straightLine = null;
     try {
       var levelsOnly = [];
@@ -1180,17 +1175,13 @@ function onFormSubmit(e) {
         if (answers[spirits[sl]]) levelsOnly.push(String(answers[spirits[sl]]).trim());
       }
       straightLine = detectStraightLine(levelsOnly);
-      if (straightLine) {
-        Logger.log("STRAIGHT-LINE SUSPECTED: " + straightLine.count + "/" + straightLine.total +
-                   ' bottles all read "' + straightLine.value + '"');
-      }
     } catch (slErr) {
       Logger.log("Straight-line check skipped: " + slErr);
     }
 
-    // v6: remember who counted, so the nightly reminder has somewhere to go.
+    // v6: remember who counted, so the nightly reminder has a list.
     try {
-      rememberBartender(ss, bartender, answers["Email"] || answers["email"] || "");
+      rememberBartender(bartender);
     } catch (rosterErr) {
       Logger.log("Roster update skipped (submission is intact): " + rosterErr);
     }
@@ -1259,8 +1250,8 @@ function onFormSubmit(e) {
     if (straightLine) {
       sheet.getRange(1, col).setNote(
         straightLine.count + " of " + straightLine.total + ' bottles were all recorded as "' +
-        straightLine.value + '". That is ' + Math.round(straightLine.share * 100) +
-        '% identical - check with ' + bartender + ' before trusting this column.');
+        straightLine.value + '" - ' + Math.round(straightLine.share * 100) +
+        '% identical. Check with ' + bartender + ' before trusting this column.');
     }
 
     Logger.log("Recorded " + headerText.replace("\n", " ") + " in " + sheet.getName() +
@@ -1327,6 +1318,10 @@ function refreshDashboard(ss) {
   }
 
   ensureCapacity(sheet, 400, CONFIG.HELPER_START_COL + CONFIG.HELPER_COL_COUNT);
+
+  // v6: the roster block is editable, and clear() would wipe it, so read
+  // it back into storage first - same idea as savedSearch above.
+  try { readRosterFromDashboard(sheet); } catch (rErr) { Logger.log("Roster read skipped: " + rErr); }
 
   sheet.getRange(1, 1, sheet.getMaxRows(), sheet.getMaxColumns()).breakApart();
   sheet.clear();
@@ -1619,6 +1614,16 @@ function refreshDashboard(ss) {
   sheet.setColumnWidth(4, 110);
   sheet.setColumnWidth(5, 130);
   sheet.setFrozenRows(2);
+
+  // v6: redraw the bartender roster in G-I.
+  try {
+    writeRosterToDashboard(sheet, ROSTER_ROW);
+    sheet.setColumnWidth(ROSTER_COL, 150);
+    sheet.setColumnWidth(ROSTER_COL + 1, 210);
+    sheet.setColumnWidth(ROSTER_COL + 2, 70);
+  } catch (wErr) {
+    Logger.log("Roster block not drawn: " + wErr);
+  }
 }
 
 function collectHistory(ss) {
@@ -1728,249 +1733,161 @@ function emailFormLinkToManagers() {
 }
 
 // ============================================================
-// v6 — ADOPTION PACK
-//   1. Nightly rotation: the form only ever asks for tonight's
-//      categories (~9 bottles), not all 44.
-//   2. Five fill levels instead of nine: no sideways scrolling on a
-//      phone, and no false precision to hide behind.
-//   4. Straight-line detector: a submission where nearly every bottle
-//      reads the same is recorded but flagged, not trusted.
-//   + Bartender roster, managed from the Manager Dashboard.
-//   + Conditional 9:30pm reminder - only when tonight's count is missing.
-//   + Bartender becomes a dropdown fed by the roster, so nobody types
-//     their name and "Abhik" never becomes "abhik".
+// v6 - THREE TWEAKS TO v5. Nothing else changed.
 //
-// The form is edited IN PLACE throughout. Its URL never changes, so the
-// QR code already printed and hung at the bar keeps working.
+//   1. Six fill levels instead of nine (E, 1/8, 1/4, 1/2, 3/4, Full).
+//   2. Straight-line detection on submissions.
+//   3. A 9:30pm reminder to BARTENDERS, only on nights with no count.
+//      The roster lives on the Manager Dashboard.
+//
+// Still every bottle, every night. Still the same twenty category
+// grids. Still the same form and the same printed QR.
 // ============================================================
 
-const ROSTER_SHEET_NAME = "Bartenders";
-const ROSTER_HEADERS = ["Name", "Email", "Phone", "Active", "Added", "Last Count"];
+// ---- 1. SIX LEVELS ---------------------------------------------------
+// Run once after pasting this in. It only swaps the COLUMNS on the level
+// grids that already exist - rows, order and everything else untouched.
+function applySixLevels() {
+  var form = getForm();
+  var items = form.getItems(FormApp.ItemType.GRID);
+  var changed = 0;
+  for (var i = 0; i < items.length; i++) {
+    if (String(items[i].getTitle()).indexOf(GRID_LEVEL_PREFIX) !== 0) continue;
+    items[i].asGridItem().setColumns(GRID_LEVEL_COLUMNS);
+    changed++;
+  }
+  Logger.log("Set " + changed + " level grids to: " + GRID_LEVEL_COLUMNS.join(" / "));
+  Logger.log("Unopened grids were not touched.");
+}
 
-// Which categories get counted on which day. Index 0 = Sunday.
-// Fast movers (Well Spirits, Vodka, Whiskey) come round twice a week;
-// everything is covered at least once.
-const ROTATION = [
-  ["Vodka", "Whiskey / Bourbon"],                        // Sun
-  ["Well Spirits", "Vodka"],                             // Mon
-  ["Whiskey / Bourbon", "Cognac"],                       // Tue
-  ["Tequila / Mezcal", "Rum", "Gin"],                    // Wed
-  ["Premium Liqueurs"],                                  // Thu
-  ["Well Liqueurs / Mixers"],                            // Fri
-  ["Well Spirits", "Mixers & Syrups"]                    // Sat
-];
-
-// A count whose levels are this uniform is almost certainly not a count.
-const OTHER_BARTENDER_LABEL = "Someone else (type in Notes)";
+// ---- 2. STRAIGHT-LINE DETECTION --------------------------------------
+// 09/18 arrived with all 44 bottles at 1/2 and the word "Same" typed in
+// every backup field. It still gets recorded - deleting it would only
+// hide the behaviour - but it is flagged so nobody reads it as a count.
 const STRAIGHT_LINE_THRESHOLD = 0.70;
 const STRAIGHT_LINE_MIN_ROWS = 6;
 
-const REMINDER_HOUR = 21;    // 9pm block; Apps Script fires within the hour
+function detectStraightLine(levels) {
+  var vals = [];
+  for (var i = 0; i < levels.length; i++) if (levels[i]) vals.push(levels[i]);
+  if (vals.length < STRAIGHT_LINE_MIN_ROWS) return null;
+  var tally = {};
+  for (var j = 0; j < vals.length; j++) tally[vals[j]] = (tally[vals[j]] || 0) + 1;
+  var topVal = null, topCount = 0;
+  for (var k in tally) if (tally[k] > topCount) { topCount = tally[k]; topVal = k; }
+  var share = topCount / vals.length;
+  if (share < STRAIGHT_LINE_THRESHOLD) return null;
+  return { value: topVal, count: topCount, total: vals.length, share: share };
+}
+
+// ---- 3. BARTENDER ROSTER + NIGHTLY REMINDER --------------------------
+// The roster is edited ON the Manager Dashboard. Because refreshDashboard
+// clears the sheet, the roster is also kept in Script Properties: the
+// dashboard block is read back before every refresh and redrawn after,
+// the same way the search box is preserved.
+const ROSTER_PROP_KEY = "bartenderRoster";
+const ROSTER_ANCHOR_PROP = "bartenderRosterRow";
+const ROSTER_TITLE = "BARTENDERS - nightly reminder list";
+const ROSTER_COLS = ["Name", "Email", "Active?"];
+// Columns G-I: clear of the main body and of the per-bottle history
+// QUERY below it, which grows to an unpredictable length.
+const ROSTER_COL = 7;
+const ROSTER_ROW = 2;
+const REMINDER_HOUR = 21;
 const REMINDER_MINUTE = 30;
 
-function todaysCategories(d) {
-  var day = (d || new Date()).getDay();
-  return ROTATION[day] || [];
+function loadRoster() {
+  var raw = PropertiesService.getScriptProperties().getProperty(ROSTER_PROP_KEY);
+  if (!raw) return [];
+  try { return JSON.parse(raw); } catch (e) { return []; }
 }
 
-function todaysBottles(d) {
-  var cats = todaysCategories(d);
-  var out = [];
-  for (var i = 0; i < cats.length; i++) {
-    var rows = SPIRIT_CATEGORIES[cats[i]];
-    if (rows) out = out.concat(rows);
-  }
-  return out;
+function saveRoster(list) {
+  PropertiesService.getScriptProperties().setProperty(ROSTER_PROP_KEY, JSON.stringify(list));
 }
 
-// ------------------------------------------------------------
-// NIGHTLY FORM REBUILD
-// The form carries exactly two grids. Every evening this swaps their
-// rows to tonight's categories. ~4 API calls, so it cannot time out
-// the way the full 44-bottle conversion did.
-// ------------------------------------------------------------
-const NIGHTLY_LEVEL_TITLE = "Tonight's Bottles - Fill Level";
-const NIGHTLY_UNOPENED_TITLE = "Tonight's Bottles - Backups in the Back";
-
-function rebuildNightlyForm() {
-  var form = getForm();
-  var bottles = todaysBottles();
-  if (!bottles.length) {
-    Logger.log("No categories scheduled for today - form left as it was.");
-    return;
-  }
-  var cats = todaysCategories().join(" + ");
-
-  var lvl = null, un = null;
-  var items = form.getItems(FormApp.ItemType.GRID);
-  for (var i = 0; i < items.length; i++) {
-    var t = String(items[i].getTitle());
-    if (t.indexOf("Fill Level") !== -1) lvl = items[i].asGridItem();
-    else if (t.indexOf("Backups") !== -1) un = items[i].asGridItem();
-  }
-  if (!lvl) lvl = form.addGridItem();
-  if (!un) un = form.addGridItem();
-
-  // Clear out v5's twenty per-category grids the first time this runs.
-  // Leaving them up would mean a bartender still faces all 44 bottles,
-  // which is the whole problem this version exists to fix.
-  var stale = 0;
-  var all = form.getItems(FormApp.ItemType.GRID);
-  for (var d = all.length - 1; d >= 0; d--) {
-    var title = String(all[d].getTitle());
-    if (all[d].getId() === lvl.getId() || all[d].getId() === un.getId()) continue;
-    if (title.indexOf(GRID_LEVEL_PREFIX) === 0 || title.indexOf(GRID_UNOPENED_PREFIX) === 0) {
-      form.deleteItem(all[d]);
-      stale++;
-    }
-  }
-  if (stale) Logger.log("Removed " + stale + " leftover per-category grids from v5.");
-
-  lvl.setTitle(NIGHTLY_LEVEL_TITLE)
-     .setHelpText("Tonight: " + cats + ". Tap how full each open bottle is.")
-     .setRows(bottles)
-     .setColumns(GRID_LEVEL_COLUMNS)
-     .setRequired(true);
-
-  un.setTitle(NIGHTLY_UNOPENED_TITLE)
-    .setHelpText("Sealed backups behind each one. Tap 6+ if there are more than five.")
-    .setRows(bottles)
-    .setColumns(GRID_UNOPENED_COLUMNS)
-    .setRequired(true);
-
-  form.setConfirmationMessage(
-    "Counted: " + cats + ". Thank you - that is tonight's whole job.\n" +
-    "Spotted a mistake? Open the form again and submit a correction; the newest one wins."
-  );
-  form.setAllowResponseEdits(true);
-
-  Logger.log("Form set for " + cats + " (" + bottles.length + " bottles).");
-}
-
-function installNightlyTriggers() {
-  var keep = ["rebuildNightlyForm", "sendNightlyReminder"];
-  var all = ScriptApp.getProjectTriggers();
-  for (var i = 0; i < all.length; i++) {
-    if (keep.indexOf(all[i].getHandlerFunction()) !== -1) ScriptApp.deleteTrigger(all[i]);
-  }
-  ScriptApp.newTrigger("rebuildNightlyForm").timeBased().atHour(16).everyDays(1).create();
-  ScriptApp.newTrigger("sendNightlyReminder").timeBased().atHour(REMINDER_HOUR)
-    .nearMinute(REMINDER_MINUTE).everyDays(1).create();
-  Logger.log("Nightly triggers installed: form rebuild at 4pm, reminder at ~9:30pm.");
-}
-
-// ------------------------------------------------------------
-// BARTENDER ROSTER
-// ------------------------------------------------------------
-function getRosterSheet(ss) {
-  var sh = ss.getSheetByName(ROSTER_SHEET_NAME);
-  if (!sh) {
-    sh = ss.insertSheet(ROSTER_SHEET_NAME);
-    sh.getRange(1, 1, 1, ROSTER_HEADERS.length).setValues([ROSTER_HEADERS])
-      .setFontWeight("bold").setFontColor("#ffffff")
-      .setBackground(CONFIG.SHEET_COLORS.headerBg);
-    sh.setFrozenRows(1);
-    sh.setColumnWidth(1, 160);
-    sh.setColumnWidth(2, 230);
-    var note = sh.getRange(1, 4);
-    note.setNote('Set Active to "No" when someone leaves. They stop getting the ' +
-                 'nightly reminder that night. Nothing else needs changing.');
-  }
-  return sh;
-}
-
-function readRoster(ss) {
-  var sh = getRosterSheet(ss);
-  var last = sh.getLastRow();
-  if (last < 2) return [];
-  var vals = sh.getRange(2, 1, last - 1, ROSTER_HEADERS.length).getValues();
-  var out = [];
-  for (var i = 0; i < vals.length; i++) {
-    var name = String(vals[i][0]).trim();
-    if (!name) continue;
-    out.push({
-      row: i + 2,
-      name: name,
-      email: String(vals[i][1]).trim(),
-      phone: String(vals[i][2]).trim(),
-      active: String(vals[i][3]).trim().toLowerCase() !== "no",
-      lastCount: vals[i][5]
-    });
-  }
-  return out;
-}
-
-// Called on every submission: adds a bartender the first time they
-// appear, and keeps their email and last-count date current.
-function rememberBartender(ss, name, email) {
+// Adds whoever just submitted, if they are new. Email stays blank until
+// a manager types one on the dashboard - a blank email simply means that
+// person gets no reminder.
+function rememberBartender(name) {
   name = String(name || "").trim();
   if (!name) return;
-  var sh = getRosterSheet(ss);
-  var roster = readRoster(ss);
-  for (var i = 0; i < roster.length; i++) {
-    if (roster[i].name.toLowerCase() === name.toLowerCase()) {
-      if (email && !roster[i].email) sh.getRange(roster[i].row, 2).setValue(email);
-      sh.getRange(roster[i].row, 6).setValue(new Date());
-      return;
-    }
+  var list = loadRoster();
+  for (var i = 0; i < list.length; i++) {
+    if (String(list[i].name).trim().toLowerCase() === name.toLowerCase()) return;
   }
-  sh.appendRow([name, email || "", "", "Yes", new Date(), new Date()]);
-  Logger.log("Roster: added " + name + (email ? "" : " (no email yet - add one so reminders reach them)"));
+  list.push({ name: name, email: "", active: true });
+  saveRoster(list);
+  Logger.log('Roster: added "' + name + '". Add their email on the Manager Dashboard.');
+}
+
+// Reads the editable block off the dashboard back into storage.
+function readRosterFromDashboard(sheet) {
+  var props = PropertiesService.getScriptProperties();
+  var anchor = parseInt(props.getProperty(ROSTER_ANCHOR_PROP) || "0", 10);
+  if (!anchor) return;
   try {
-    syncBartenderDropdown();
+    var maxRows = sheet.getMaxRows();
+    var height = Math.min(60, maxRows - anchor - 1);
+    if (height < 1) return;
+    var vals = sheet.getRange(anchor + 2, ROSTER_COL, height, 3).getValues();
+    var list = [];
+    for (var i = 0; i < vals.length; i++) {
+      var nm = String(vals[i][0]).trim();
+      if (!nm) continue;
+      list.push({
+        name: nm,
+        email: String(vals[i][1]).trim(),
+        active: String(vals[i][2]).trim().toLowerCase() !== "no"
+      });
+    }
+    if (list.length) saveRoster(list);
   } catch (e) {
-    Logger.log("Dropdown sync skipped: " + e);
+    Logger.log("Could not read the roster block (keeping the stored copy): " + e);
   }
 }
 
-// Keeps the form's Bartender question as a dropdown of everyone active.
-// One shared form, one QR, no typing - and the spelling stays stable, so
-// a person's history does not split in two.
-function syncBartenderDropdown() {
-  var ss = getSpreadsheet();
-  var roster = readRoster(ss);
-  var names = [];
-  for (var i = 0; i < roster.length; i++) {
-    if (roster[i].active) names.push(roster[i].name);
-  }
-  if (!names.length) {
-    Logger.log("Roster has nobody active - dropdown left alone.");
-    return;
-  }
-  names.sort();
-  names.push(OTHER_BARTENDER_LABEL);
+// Draws the block at the bottom of the dashboard after a refresh.
+function writeRosterToDashboard(sheet, startRow) {
+  var list = loadRoster();
+  PropertiesService.getScriptProperties().setProperty(ROSTER_ANCHOR_PROP, String(startRow));
 
-  var form = getForm();
-  var items = form.getItems();
-  for (var j = 0; j < items.length; j++) {
-    var t = String(items[j].getTitle()).toLowerCase();
-    if (t.indexOf("bartender") !== 0) continue;
-    var type = items[j].getType();
-    if (type === FormApp.ItemType.LIST) {
-      items[j].asListItem().setChoiceValues(names);
-      Logger.log("Bartender dropdown updated: " + names.join(", "));
-      return;
-    }
-    if (type === FormApp.ItemType.MULTIPLE_CHOICE) {
-      items[j].asMultipleChoiceItem().setChoiceValues(names);
-      Logger.log("Bartender choices updated: " + names.join(", "));
-      return;
-    }
-    Logger.log('Bartender question is still free text. Change it to a ' +
-               'Dropdown in the form once, then re-run this.');
-    return;
+  sheet.getRange(startRow, ROSTER_COL, 1, 3).merge()
+       .setValue(ROSTER_TITLE)
+       .setFontWeight("bold").setFontColor("#FFFFFF")
+       .setBackground(CONFIG.SHEET_COLORS.headerBg)
+       .setHorizontalAlignment("left");
+
+  sheet.getRange(startRow + 1, ROSTER_COL, 1, 3)
+       .setValues([ROSTER_COLS])
+       .setFontWeight("bold")
+       .setBackground(CONFIG.SHEET_COLORS.colHeaderBg)
+       .setFontColor("#FFFFFF");
+
+  sheet.getRange(startRow + 1, ROSTER_COL + 2).setNote(
+    'Type "No" to stop someone\'s nightly reminder - use it when they leave. ' +
+    'A blank email also means no reminder. Edits here stick: the dashboard ' +
+    'reads this block before it rebuilds.');
+
+  if (!list.length) {
+    sheet.getRange(startRow + 2, ROSTER_COL)
+         .setValue("(nobody yet - names appear here after their first count)")
+         .setFontColor(CONFIG.COLORS.muted).setFontStyle("italic");
+    return startRow + 3;
   }
-  Logger.log("No Bartender question found on the form.");
+
+  var rows = [];
+  for (var i = 0; i < list.length; i++) {
+    rows.push([list[i].name, list[i].email || "", list[i].active === false ? "No" : "Yes"]);
+  }
+  sheet.getRange(startRow + 2, ROSTER_COL, rows.length, 3).setValues(rows);
+  sheet.getRange(startRow + 2, ROSTER_COL + 2, rows.length, 1).setHorizontalAlignment("center");
+  return startRow + 2 + rows.length;
 }
 
-// ------------------------------------------------------------
-// CONDITIONAL NIGHTLY REMINDER
-// Nothing is sent if tonight's count already landed. A reminder that
-// only arrives when it is actually needed keeps getting read.
-// ------------------------------------------------------------
+// ---- the reminder itself ---------------------------------------------
 function countExistsForToday(ss) {
-  var name = getWeekRange(new Date()).name;
-  var sheet = ss.getSheetByName(name);
+  var sheet = ss.getSheetByName(getWeekRange(new Date()).name);
   if (!sheet) return false;
   var lastCol = sheet.getLastColumn();
   if (lastCol < 3) return false;
@@ -1985,32 +1902,27 @@ function countExistsForToday(ss) {
 function sendNightlyReminder() {
   var ss = getSpreadsheet();
   if (countExistsForToday(ss)) {
-    Logger.log("Tonight's count is already in - no reminder sent.");
+    Logger.log("Tonight's count is already in - nothing sent.");
     return;
   }
-  var roster = readRoster(ss);
-  var cats = todaysCategories().join(" + ");
-  var bottles = todaysBottles().length;
-  var formUrl = getForm().getPublishedUrl();   // the same link the printed QR points at
-  var sent = 0;
+  var list = loadRoster();
+  var formUrl = getForm().getPublishedUrl();   // the link the printed QR points at
+  var sent = 0, skipped = 0;
 
-  for (var i = 0; i < roster.length; i++) {
-    var b = roster[i];
-    if (!b.active || !b.email) continue;
-    var link = formUrl;
-    var subject = "Bar count tonight - " + cats + " (" + bottles + " bottles)";
-    var plain = "Hi " + b.name + ",\n\nTonight's bar count has not come in yet.\n\n" +
-      "Tonight is " + cats + " - " + bottles + " bottles, about two minutes.\n\n" +
-      link + "\n\nIf someone else already counted, ignore this.\n";
+  for (var i = 0; i < list.length; i++) {
+    var b = list[i];
+    if (b.active === false) { skipped++; continue; }
+    if (!b.email) { skipped++; continue; }
+    var subject = "Bar count tonight - not in yet";
+    var plain = "Hi " + b.name + ",\n\nTonight's bar count hasn't come in yet.\n\n" +
+                formUrl + "\n\nIf someone else already counted, ignore this.\n";
     var html =
       '<div style="font-family:Helvetica,Arial,sans-serif;color:' + CONFIG.COLORS.navy + ';">' +
       '<p>Hi ' + escapeHtml(b.name) + ',</p>' +
-      '<p>Tonight’s bar count has not come in yet.</p>' +
-      '<p style="font-size:16px;"><strong>Tonight: ' + escapeHtml(cats) + '</strong><br>' +
-      bottles + ' bottles — about two minutes.</p>' +
-      '<p><a href="' + link + '" style="background:' + CONFIG.COLORS.terracotta +
+      '<p>Tonight’s bar count hasn’t come in yet.</p>' +
+      '<p><a href="' + formUrl + '" style="background:' + CONFIG.COLORS.terracotta +
       ';color:#fff;padding:12px 22px;border-radius:6px;text-decoration:none;' +
-      'display:inline-block;font-size:16px;">Count tonight’s bottles</a></p>' +
+      'display:inline-block;font-size:16px;">Open the count</a></p>' +
       '<p style="color:' + CONFIG.COLORS.muted + ';font-size:13px;">' +
       'If someone else already counted, ignore this.</p></div>';
     try {
@@ -2020,28 +1932,15 @@ function sendNightlyReminder() {
       Logger.log("Reminder to " + b.email + " failed: " + err);
     }
   }
-  Logger.log("Reminders sent: " + sent + " (managers were not emailed).");
+  Logger.log("Bartender reminders sent: " + sent + " | skipped: " + skipped + " | managers: none.");
 }
 
-// ------------------------------------------------------------
-// STRAIGHT-LINE DETECTION
-// 09/18 came in with all 44 bottles at 1/2 and the word "Same" typed
-// in every backup field. It still counts as a submission - but it
-// should never be mistaken for a count.
-// ------------------------------------------------------------
-function detectStraightLine(levels) {
-  var vals = [];
-  for (var i = 0; i < levels.length; i++) {
-    if (levels[i]) vals.push(levels[i]);
+function installReminderTrigger() {
+  var all = ScriptApp.getProjectTriggers();
+  for (var i = 0; i < all.length; i++) {
+    if (all[i].getHandlerFunction() === "sendNightlyReminder") ScriptApp.deleteTrigger(all[i]);
   }
-  if (vals.length < STRAIGHT_LINE_MIN_ROWS) return null;
-  var tally = {};
-  for (var j = 0; j < vals.length; j++) tally[vals[j]] = (tally[vals[j]] || 0) + 1;
-  var topVal = null, topCount = 0;
-  for (var k in tally) {
-    if (tally[k] > topCount) { topCount = tally[k]; topVal = k; }
-  }
-  var share = topCount / vals.length;
-  if (share < STRAIGHT_LINE_THRESHOLD) return null;
-  return { value: topVal, count: topCount, total: vals.length, share: share };
+  ScriptApp.newTrigger("sendNightlyReminder")
+    .timeBased().atHour(REMINDER_HOUR).nearMinute(REMINDER_MINUTE).everyDays(1).create();
+  Logger.log("Nightly bartender reminder installed for ~" + REMINDER_HOUR + ":" + REMINDER_MINUTE + ".");
 }

@@ -36,12 +36,12 @@ const CONFIG = {
 
   DASHBOARD_NAME: "Manager Dashboard",
 
-  LOW_STOCK_LEVELS: ["E", "1/4"],
+  LOW_STOCK_LEVELS: ["E", "1/8", "1/4"],
   // A bottle is only "low stock" if the OPEN bottle is low AND there are
   // fewer than this many unopened backups behind it. A low bottle with 2+
   // backups isn't a problem - it's just a bottle in use.
   LOW_STOCK_MAX_UNOPENED: 2,
-  BOTTLE_OPTIONS: ["E", "1/4", "1/2", "3/4", "Full"],
+  BOTTLE_OPTIONS: ["E", "1/8", "1/4", "1/2", "3/4", "Full"],
 
   ANALYSIS_WEEKS: 4,
   CHRONIC_THRESHOLD: 3,
@@ -390,11 +390,14 @@ function listGridCoverage() {
 // changing the parser.
 const GRID_LEVEL_PREFIX = "Stock Level";
 const GRID_UNOPENED_PREFIX = "Unopened Count";
-// v6: five columns, not nine. Nine needed a sideways scroll on a phone
-// for every single row, and eighths were false precision through dark
-// glass - which is exactly what a middle-column tap hides behind.
-// LEVEL_TO_FRACTION still knows all nine so old weeks still read.
-const GRID_LEVEL_COLUMNS = ["E", "1/4", "1/2", "3/4", "Full"];
+// v6: six columns, not nine, and deliberately UNEVENLY spaced.
+// Nine needed a sideways scroll on a phone for every row. But an even
+// five was wrong too: the reorder decision lives entirely at the bottom
+// of the bottle. Nobody orders differently for 3/4 versus 5/8; everybody
+// orders differently for 1/8 versus 1/4. So the scale is fine near empty
+// and coarse up top - and it has no comfortable middle button to tap.
+// LEVEL_TO_FRACTION still knows all nine so earlier weeks still read.
+const GRID_LEVEL_COLUMNS = ["E", "1/8", "1/4", "1/2", "3/4", "Full"];
 const GRID_UNOPENED_COLUMNS = ["0", "1", "2", "3", "4", "5", "6+"];
 // Google's grids get cramped on a phone past ~8 rows, so long categories
 // are split into multiple grids ("Premium Liqueurs (1 of 2)").

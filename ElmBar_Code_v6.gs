@@ -1788,16 +1788,12 @@ function detectStraightLine(levels) {
 // before they could submit - friction this form cannot afford. Phones
 // autofill it after the first time, so in practice it is typed once.
 //
-// The help text explains WHY it is being collected. People hand over an
-// address far more readily when the reason is stated plainly, and it
-// keeps anyone from assuming it is being used for something else.
+// The help text states what the address is for and what it is not for,
+// in two sentences. Longer than that and nobody reads it.
 const EMAIL_QUESTION_TITLE = "Email";
 const EMAIL_QUESTION_HELP =
-  "Used for one thing only: a reminder at 9:30pm on nights the count " +
-  "hasn't been submitted yet. Counts have been getting missed, which " +
-  "means we find out a bottle is empty when a guest orders it \u2014 and " +
-  "then we're waiting on a delivery. No reminder goes out on nights the " +
-  "count is already in, and nothing else is ever sent to this address.";
+  "Only used for a 9:30pm reminder on nights the count hasn't been " +
+  "submitted yet. Nothing else is sent to this address.";
 
 function addEmailQuestion() {
   var form = getForm();

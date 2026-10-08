@@ -153,6 +153,7 @@ function onOpen() {
       .addItem("Email Form Link to Managers", "emailFormLinkToManagers")
       .addSeparator()
       .addItem("Set Form to 6 Levels", "applySixLevels")
+      .addItem("Add Email Question to Form", "addEmailQuestion")
       .addItem("Send Bartender Reminder Now", "sendNightlyReminder")
       .addItem("Install 9:30pm Reminder", "installReminderTrigger")
       .addToUi();
@@ -1055,7 +1056,7 @@ function onFormSubmit(e) {
     var ss = getSpreadsheet();
 
     var answers = {};
-    var date = "", shift = "", bartender = "", notes = "";
+    var date = "", shift = "", bartender = "", notes = "", email = "";
 
     var items = e.response.getItemResponses();
     for (var i = 0; i < items.length; i++) {
@@ -1097,6 +1098,7 @@ function onFormSubmit(e) {
       if (lower.indexOf("date") === 0) date = value;
       else if (lower.indexOf("shift") === 0) shift = value;
       else if (lower.indexOf("bartender") === 0) bartender = value;
+      else if (lower.indexOf("email") === 0) email = value;
       else if (lower.indexOf("notes") === 0) notes = value;
       else answers[title] = value;
     }
@@ -1181,7 +1183,7 @@ function onFormSubmit(e) {
 
     // v6: remember who counted, so the nightly reminder has a list.
     try {
-      rememberBartender(bartender);
+      rememberBartender(bartender, email);
     } catch (rosterErr) {
       Logger.log("Roster update skipped (submission is intact): " + rosterErr);
     }
@@ -1780,6 +1782,62 @@ function detectStraightLine(levels) {
   return { value: topVal, count: topCount, total: vals.length, share: share };
 }
 
+// ---- the email question ----------------------------------------------
+// Asked on the form rather than through Google's "collect email
+// addresses", which would force everyone to sign in to a Google account
+// before they could submit - friction this form cannot afford. Phones
+// autofill it after the first time, so in practice it is typed once.
+//
+// The help text explains WHY it is being collected. People hand over an
+// address far more readily when the reason is stated plainly, and it
+// keeps anyone from assuming it is being used for something else.
+const EMAIL_QUESTION_TITLE = "Email";
+const EMAIL_QUESTION_HELP =
+  "Used for one thing only: a reminder at 9:30pm on nights the count " +
+  "hasn't been submitted yet. Counts have been getting missed, which " +
+  "means we find out a bottle is empty when a guest orders it \u2014 and " +
+  "then we're waiting on a delivery. No reminder goes out on nights the " +
+  "count is already in, and nothing else is ever sent to this address.";
+
+function addEmailQuestion() {
+  var form = getForm();
+  var items = form.getItems();
+  var bartenderIndex = -1;
+
+  for (var i = 0; i < items.length; i++) {
+    var t = String(items[i].getTitle()).trim().toLowerCase();
+    if (t === EMAIL_QUESTION_TITLE.toLowerCase()) {
+      // Already there - just make sure the wording and rules are current.
+      var existing = items[i].asTextItem();
+      existing.setHelpText(EMAIL_QUESTION_HELP).setRequired(true);
+      try {
+        existing.setValidation(FormApp.createTextValidation()
+          .setHelpText("Please enter a valid email address.")
+          .requireTextIsEmail().build());
+      } catch (vErr) {
+        Logger.log("Email validation not applied: " + vErr);
+      }
+      Logger.log("Email question was already on the form - wording refreshed.");
+      return;
+    }
+    if (t.indexOf("bartender") === 0) bartenderIndex = i;
+  }
+
+  var item = form.addTextItem()
+    .setTitle(EMAIL_QUESTION_TITLE)
+    .setHelpText(EMAIL_QUESTION_HELP)
+    .setRequired(true);
+  try {
+    item.setValidation(FormApp.createTextValidation()
+      .setHelpText("Please enter a valid email address.")
+      .requireTextIsEmail().build());
+  } catch (vErr) {
+    Logger.log("Email validation not applied: " + vErr);
+  }
+  if (bartenderIndex >= 0) form.moveItem(item, bartenderIndex + 1);
+  Logger.log("Email question added, directly under Bartender.");
+}
+
 // ---- 3. BARTENDER ROSTER + NIGHTLY REMINDER --------------------------
 // The roster is edited ON the Manager Dashboard. Because refreshDashboard
 // clears the sheet, the roster is also kept in Script Properties: the
@@ -1809,16 +1867,25 @@ function saveRoster(list) {
 // Adds whoever just submitted, if they are new. Email stays blank until
 // a manager types one on the dashboard - a blank email simply means that
 // person gets no reminder.
-function rememberBartender(name) {
+function rememberBartender(name, email) {
   name = String(name || "").trim();
+  email = String(email || "").trim();
   if (!name) return;
   var list = loadRoster();
   for (var i = 0; i < list.length; i++) {
-    if (String(list[i].name).trim().toLowerCase() === name.toLowerCase()) return;
+    if (String(list[i].name).trim().toLowerCase() === name.toLowerCase()) {
+      // Someone who left a blank email the first time, or changed it.
+      if (email && list[i].email !== email) {
+        list[i].email = email;
+        saveRoster(list);
+        Logger.log('Roster: updated the email on file for "' + name + '".');
+      }
+      return;
+    }
   }
-  list.push({ name: name, email: "", active: true });
+  list.push({ name: name, email: email, active: true });
   saveRoster(list);
-  Logger.log('Roster: added "' + name + '". Add their email on the Manager Dashboard.');
+  Logger.log('Roster: added "' + name + '"' + (email ? "" : " with no email - add one on the Manager Dashboard."));
 }
 
 // Reads the editable block off the dashboard back into storage.

@@ -402,6 +402,15 @@ function escapeHtml(text) {
 
 function formatDateShort(dateStr) {
   if (!dateStr) return "";
+  // A real Date reaches here from countExistsForToday, and from the form
+  // itself once the Date question is a date picker. Without this the
+  // regex misses and the whole "Wed Oct 08 2026 00:00:00 GMT-0500..."
+  // string comes back - which silently broke the nightly reminder (no
+  // header ever matched, so it fired every night) and is how a Date
+  // ended up written into a stock-level cell.
+  if (Object.prototype.toString.call(dateStr) === "[object Date]") {
+    return (dateStr.getMonth() + 1) + "/" + dateStr.getDate();
+  }
   var m = String(dateStr).match(/^(\d{1,2})\/(\d{1,2})/);
   return m ? m[1] + "/" + m[2] : String(dateStr).trim();
 }
@@ -863,7 +872,7 @@ function onFormSubmit(e) {
         continue;
       }
 
-      if (lower.indexOf("date") === 0) date = value;
+      if (lower.indexOf("date") === 0) date = formatDateShort(value);
       else if (lower.indexOf("shift") === 0) shift = value;
       else if (lower.indexOf("bartender") === 0) bartender = value;
       else if (lower.indexOf("email") === 0) email = value;
@@ -1147,9 +1156,12 @@ function refreshDashboard(ss) {
     if (!orec) continue;
     if (CONFIG.LOW_STOCK_LEVELS.indexOf(orec.level) === -1) continue;
     var backups = backupsOf(orec);
-    if (backups >= CONFIG.LOW_STOCK_MAX_UNOPENED) continue;
     var par = parseFloat(currentPars[oname]);
     var targetPar = isNaN(par) ? (suggestedPar[oname] || 2) : par;
+    // Order when the backups are short of THIS bottle's par, not of a
+    // flat two. Dewar's sits at 1/8 with 2 backups and a par of 3 - a
+    // bottle you would order, invisible under the old fixed rule.
+    if (backups >= targetPar) continue;
     orderRows.push({
       sort: (severity[orec.level] === undefined ? 3 : severity[orec.level]),
       row: [oname, describeLevel(orec.level), backups, Math.max(1, Math.round(targetPar - backups)), orec.header]
@@ -1204,19 +1216,29 @@ function refreshDashboard(ss) {
   var nightsText = nightsCounted + " of 7" +
     (misdated.length ? "   (+" + misdated.length + " with a wrong date)" : "");
 
-  // ---------- suspect counts (straight-line flags live in week-tab headers) ----------
-  var suspects = [];
-  for (var ws = 0; ws < Math.min(weekSheets.length, CONFIG.ANALYSIS_WEEKS); ws++) {
-    var wsSheet = weekSheets[ws];
-    if (wsSheet.getLastColumn() < 3) continue;
-    var hdrs = wsSheet.getRange(1, 3, 1, wsSheet.getLastColumn() - 2).getValues()[0];
-    for (var hi = 0; hi < hdrs.length; hi++) {
-      var htxt = String(hdrs[hi]);
-      if (htxt.indexOf("CHECK") !== -1) {
-        suspects.push([wsSheet.getName(), htxt.replace(/\n/g, " ").replace(/⚠ CHECK/, "").trim()]);
-      }
-    }
+  // ---------- suspect counts ----------
+  // Re-derived from the readings themselves rather than from the "CHECK"
+  // marker in a column header. The marker is only written on submissions
+  // made since the detector existed, so scanning headers missed 09/18 -
+  // forty-four bottles all recorded as 1/2 - which is the exact case the
+  // detector was built for.
+  var byColumn = {};
+  for (var sc = 0; sc < records.length; sc++) {
+    var srec = records[sc];
+    if (!recentWeeks[srec.week]) continue;
+    var key = srec.week + "||" + srec.header;
+    if (!byColumn[key]) byColumn[key] = [];
+    if (srec.level) byColumn[key].push(srec.level);
   }
+  var suspects = [];
+  for (var ck in byColumn) {
+    var found = detectStraightLine(byColumn[ck]);
+    if (!found) continue;
+    var bits = ck.split("||");
+    suspects.push([bits[0], bits[1].replace(/\u26A0 CHECK/, "").trim(),
+                   found.count + " of " + found.total + ' read "' + found.value + '"']);
+  }
+  suspects.sort(function (x, y) { return x[0] < y[0] ? 1 : -1; });
 
   // ---------- newest count overall ----------
   var newestRec = null;
@@ -1408,10 +1430,10 @@ function refreshDashboard(ss) {
          .setFontWeight("bold").setFontSize(12).setFontColor("#FFFFFF")
          .setBackground("#b08a3e");
     row++;
-    sheet.getRange(row, 1, 1, 2).setValues([["Week", "Shift"]])
+    sheet.getRange(row, 1, 1, 3).setValues([["Week", "Shift", "What was recorded"]])
          .setFontWeight("bold").setBackground(sand);
     row++;
-    sheet.getRange(row, 1, suspects.length, 2).setValues(suspects)
+    sheet.getRange(row, 1, suspects.length, 3).setValues(suspects)
          .setBackground(CONFIG.SHEET_COLORS.flagBg);
     row += suspects.length + 2;
   }
@@ -1993,6 +2015,7 @@ function simulateFormSubmit() {
 //   gridCategoryChunks      - used only by the two above
 //   findItemIndexByTitle    - used only by the two above
 //   seedParLevelsFromSuggested - run once, fills the empty Par column
+//   makeDateQuestionADatePicker - run once, swaps Date to a date picker
 //
 // Keep it if you would rather be able to rebuild the form later.
 // Deleting it leaves roughly a dozen names in the dropdown instead of
@@ -2104,6 +2127,52 @@ function seedParLevelsFromSuggested() {
              skipped + " left alone (already set), " + noData + " had no recent data.");
   Logger.log("These are a starting point from the last " + CONFIG.ANALYSIS_WEEKS +
              " weeks - correct any that look wrong, they carry forward each week.");
+}
+
+// Replaces the free-text Date question with a date picker. Forms cannot
+// change an item's type, so the old question is deleted and a DateItem
+// put in its place - existing responses are untouched.
+//
+// This is what lets "8/6" be typed when 10/6 was meant, and a stray Date
+// object is how "Fri Jan 02 2026 00:00:00 GMT-0600" ended up in a stock
+// level cell. formatDateShort now handles a real Date, so the picker's
+// answer records as 10/6 the same as a typed one.
+function makeDateQuestionADatePicker() {
+  var form = getForm();
+  var items = form.getItems();
+  var oldIndex = -1, oldItem = null;
+
+  for (var i = 0; i < items.length; i++) {
+    var t = String(items[i].getTitle()).trim().toLowerCase();
+    if (t.indexOf("date") !== 0) continue;
+    if (items[i].getType() === FormApp.ItemType.DATE) {
+      Logger.log("The Date question is already a date picker - nothing to do.");
+      return;
+    }
+    oldItem = items[i];
+    oldIndex = i;
+    break;
+  }
+  if (!oldItem) { Logger.log("No Date question found on the form."); return; }
+
+  var title = oldItem.getTitle();
+  var help = oldItem.getHelpText();
+  var required = true;
+  try { required = oldItem.asTextItem().isRequired(); } catch (e) {}
+
+  var picker = form.addDateItem()
+    .setTitle(title)
+    .setHelpText(help || "Tap to pick tonight's date.")
+    .setIncludesYear(false)
+    .setRequired(required);
+
+  form.deleteItem(oldItem);
+  try {
+    form.moveItem(picker.getIndex(), oldIndex);
+  } catch (mErr) {
+    Logger.log("Date picker added but not repositioned - drag it to the top: " + mErr);
+  }
+  Logger.log('Date is now a picker. Typing a wrong month is no longer possible.');
 }
 
 function installReminderTrigger() {

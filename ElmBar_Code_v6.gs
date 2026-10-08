@@ -1082,15 +1082,11 @@ function refreshDashboard(ss) {
     try {
       var prior = sheet.getRange(savedRef).getValue();
       if (prior) savedSearch = String(prior);
-    } catch (e) {
-      savedSearch = "";
-    }
+    } catch (e) { savedSearch = ""; }
   }
 
   ensureCapacity(sheet, 400, CONFIG.HELPER_START_COL + CONFIG.HELPER_COL_COUNT);
 
-  // v6: the roster block is editable, and clear() would wipe it, so read
-  // it back into storage first - same idea as savedSearch above.
   try { readRosterFromDashboard(sheet); } catch (rErr) { Logger.log("Roster read skipped: " + rErr); }
 
   sheet.getRange(1, 1, sheet.getMaxRows(), sheet.getMaxColumns()).breakApart();
@@ -1111,6 +1107,122 @@ function refreshDashboard(ss) {
   var navy = CONFIG.SHEET_COLORS.headerBg;
   var sand = CONFIG.COLORS.sand;
   var muted = CONFIG.COLORS.muted;
+  var currentWeekName = getWeekRange(new Date()).name;
+
+  // ---------- derived facts, computed once ----------
+  var latest = {};                 // newest reading per spirit
+  for (var r0 = 0; r0 < records.length; r0++) {
+    var rec = records[r0];
+    if (!latest[rec.spirit] || rec.seq > latest[rec.spirit].seq) latest[rec.spirit] = rec;
+  }
+
+  var suggestedPar = {}, avgFillPct = {};
+  for (var ps = 0; ps < spirits.length; ps++) {
+    var pname = spirits[ps], plist = bySpirit[pname], used = [];
+    for (var pi = 0; pi < plist.length; pi++) if (recentWeeks[plist[pi].week]) used.push(plist[pi]);
+    if (!used.length) continue;
+    var fillSum = 0, backupSum = 0;
+    for (var u = 0; u < used.length; u++) {
+      var fr = LEVEL_TO_FRACTION[used[u].level];
+      fillSum += (fr === undefined ? 0 : fr);
+      backupSum += (parseFloat(used[u].unopened) || 0);
+    }
+    var avgFill = fillSum / used.length;
+    suggestedPar[pname] = Math.max(1, Math.round((backupSum / used.length) + (1 - avgFill) + 0.5));
+    avgFillPct[pname] = Math.round(avgFill * 100);
+  }
+
+  function backupsOf(rec) {
+    if (!rec) return 0;
+    if (rec.unopened === "6+") return 6;
+    var n = parseInt(rec.unopened, 10);
+    return isNaN(n) ? 0 : n;
+  }
+
+  // ---------- ORDER THIS WEEK ----------
+  var severity = { "E": 0, "1/8": 1, "1/4": 2 };
+  var orderRows = [];
+  for (var os = 0; os < spirits.length; os++) {
+    var oname = spirits[os], orec = latest[oname];
+    if (!orec) continue;
+    if (CONFIG.LOW_STOCK_LEVELS.indexOf(orec.level) === -1) continue;
+    var backups = backupsOf(orec);
+    if (backups >= CONFIG.LOW_STOCK_MAX_UNOPENED) continue;
+    var par = parseFloat(currentPars[oname]);
+    var targetPar = isNaN(par) ? (suggestedPar[oname] || 2) : par;
+    orderRows.push({
+      sort: (severity[orec.level] === undefined ? 3 : severity[orec.level]),
+      row: [oname, describeLevel(orec.level), backups, Math.max(1, Math.round(targetPar - backups)), orec.header]
+    });
+  }
+  orderRows.sort(function (x, y) { return x.sort - y.sort; });
+
+  // ---------- this week's coverage, night by night ----------
+  var wk = getWeekRange(new Date());
+  var weekSheet = ss.getSheetByName(currentWeekName);
+  var weekHeaders = [];
+  if (weekSheet && weekSheet.getLastColumn() >= 3) {
+    weekHeaders = weekSheet.getRange(1, 3, 1, weekSheet.getLastColumn() - 2).getValues()[0];
+  }
+  var DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  var covLabels = [], covMarks = [], covColors = [], nightsCounted = 0;
+  for (var d = 0; d < 7; d++) {
+    var day = new Date(wk.weekStart);
+    day.setDate(wk.weekStart.getDate() + d);
+    var stamp = (day.getMonth() + 1) + "/" + day.getDate();
+    var hit = false;
+    for (var hh = 0; hh < weekHeaders.length; hh++) {
+      if (String(weekHeaders[hh]).indexOf(stamp + " ") === 0) { hit = true; break; }
+    }
+    var future = day.getTime() > new Date().getTime();
+    if (hit) nightsCounted++;
+    covLabels.push(DAY_NAMES[day.getDay()] + " " + stamp);
+    covMarks.push(hit ? "✓" : (future ? "" : "—"));
+    covColors.push(hit ? CONFIG.SHEET_COLORS.ok : (future ? "#FFFFFF" : CONFIG.SHEET_COLORS.empty));
+  }
+
+  // ---------- suspect counts (straight-line flags live in week-tab headers) ----------
+  var suspects = [];
+  for (var ws = 0; ws < Math.min(weekSheets.length, CONFIG.ANALYSIS_WEEKS); ws++) {
+    var wsSheet = weekSheets[ws];
+    if (wsSheet.getLastColumn() < 3) continue;
+    var hdrs = wsSheet.getRange(1, 3, 1, wsSheet.getLastColumn() - 2).getValues()[0];
+    for (var hi = 0; hi < hdrs.length; hi++) {
+      var htxt = String(hdrs[hi]);
+      if (htxt.indexOf("CHECK") !== -1) {
+        suspects.push([wsSheet.getName(), htxt.replace(/\n/g, " ").replace(/⚠ CHECK/, "").trim()]);
+      }
+    }
+  }
+
+  // ---------- newest count overall ----------
+  var newestRec = null;
+  for (var nr = 0; nr < records.length; nr++) {
+    if (!newestRec || records[nr].seq > newestRec.seq) newestRec = records[nr];
+  }
+  var lastCountText = "No counts recorded yet";
+  var daysSince = null;
+  if (newestRec) {
+    var md = String(newestRec.header).match(/^(\d{1,2})\/(\d{1,2})/);
+    if (md) {
+      var now = new Date();
+      var guess = new Date(now.getFullYear(), parseInt(md[1], 10) - 1, parseInt(md[2], 10));
+      if (guess.getTime() - now.getTime() > 45 * 86400000) guess.setFullYear(now.getFullYear() - 1);
+      daysSince = Math.floor((new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
+                              - guess.getTime()) / 86400000);
+    }
+    lastCountText = newestRec.header.replace(/\n/g, " ") +
+      (daysSince === null ? "" : (daysSince <= 0 ? "   (today)" :
+        daysSince === 1 ? "   (yesterday)" : "   (" + daysSince + " days ago)"));
+  }
+
+  var lowNow = {};
+  for (var ln = 0; ln < spirits.length; ln++) {
+    var lrec = latest[spirits[ln]];
+    if (lrec && CONFIG.LOW_STOCK_LEVELS.indexOf(lrec.level) !== -1) lowNow[spirits[ln]] = true;
+  }
+
+  // ================= LAYOUT =================
   var row = 1;
 
   sheet.getRange(row, 1, 1, 5).merge()
@@ -1127,31 +1239,139 @@ function refreshDashboard(ss) {
        .setFontStyle("italic").setFontColor(muted).setFontSize(10);
   row += 2;
 
-  var currentWeekName = getWeekRange(new Date()).name;
-  var shiftsSeen = {};
-  var currentLow = {};
-
-  for (var i = 0; i < records.length; i++) {
-    if (records[i].week !== currentWeekName) continue;
-    shiftsSeen[records[i].header] = true;
-    if (CONFIG.LOW_STOCK_LEVELS.indexOf(records[i].level) !== -1) {
-      currentLow[records[i].spirit] = records[i].level;
-    }
-  }
-
-  sheet.getRange(row, 1).setValue("THIS WEEK   (" + currentWeekName + ")")
-       .setFontWeight("bold").setFontSize(12).setFontColor(navy);
+  // ---- 1. AT A GLANCE ----
+  sheet.getRange(row, 1, 1, 5).merge()
+       .setValue("AT A GLANCE")
+       .setFontWeight("bold").setFontSize(12).setFontColor("#FFFFFF")
+       .setBackground(CONFIG.SHEET_COLORS.colHeaderBg);
   row++;
 
-  sheet.getRange(row, 1, 2, 2).setValues([
-    ["Shifts recorded", Object.keys(shiftsSeen).length],
-    ["Bottles currently low", Object.keys(currentLow).length]
-  ]);
-  sheet.getRange(row, 1, 2, 1).setFontWeight("bold").setBackground(sand);
-  row += 3;
+  var glance = [
+    ["Last count", lastCountText],
+    ["Nights counted this week", nightsCounted + " of 7"],
+    ["Bottles low right now", String(Object.keys(lowNow).length)],
+    ["Bottles to order", String(orderRows.length)],
+    ["Counts needing a check", String(suspects.length)]
+  ];
+  sheet.getRange(row, 1, glance.length, 2).setValues(glance);
+  sheet.getRange(row, 1, glance.length, 1).setFontWeight("bold").setBackground(sand);
+  if (daysSince !== null && daysSince >= 2) {
+    sheet.getRange(row, 2).setBackground(CONFIG.SHEET_COLORS.flagBg).setFontWeight("bold");
+  }
+  if (orderRows.length > 0) {
+    sheet.getRange(row + 3, 2).setBackground(CONFIG.SHEET_COLORS.flagBg).setFontWeight("bold");
+  }
+  if (suspects.length > 0) {
+    sheet.getRange(row + 4, 2).setBackground(CONFIG.SHEET_COLORS.flagBg).setFontWeight("bold");
+  }
+  row += glance.length + 1;
 
-  sheet.getRange(row, 1).setValue("CHRONIC LOW STOCK   (last " + CONFIG.ANALYSIS_WEEKS + " weeks)")
-       .setFontWeight("bold").setFontSize(12).setFontColor("#8a4a38");
+  sheet.getRange(row, 1).setValue("This week, night by night").setFontWeight("bold").setFontColor(muted);
+  row++;
+  sheet.getRange(row, 1, 1, 7).setValues([covLabels])
+       .setFontSize(9).setFontColor(muted).setHorizontalAlignment("center");
+  row++;
+  sheet.getRange(row, 1, 1, 7).setValues([covMarks])
+       .setBackgrounds([covColors])
+       .setFontWeight("bold").setHorizontalAlignment("center");
+  row += 2;
+
+  // ---- 2. SEARCH A BOTTLE (moved to the top: it is the question managers ask most) ----
+  sheet.getRange(row, 1, 1, 5).merge()
+       .setValue("SEARCH A BOTTLE")
+       .setFontWeight("bold").setFontSize(12).setFontColor("#FFFFFF")
+       .setBackground(CONFIG.SHEET_COLORS.colHeaderBg);
+  row++;
+
+  sheet.getRange(row, 1).setValue("Pick a bottle:").setFontWeight("bold");
+  var searchCell = sheet.getRange(row, 2);
+  searchCell.setBackground(CONFIG.SHEET_COLORS.searchBg)
+            .setFontWeight("bold")
+            .setDataValidation(
+              SpreadsheetApp.newDataValidation()
+                .requireValueInList(spirits, true)
+                .setAllowInvalid(false)
+                .build()
+            );
+  if (savedSearch) searchCell.setValue(savedSearch);
+  PropertiesService.getScriptProperties().setProperty("searchCellA1", searchCell.getA1Notation());
+  var searchRow = row;
+  row++;
+
+  sheet.getRange(row, 1, 1, 3)
+       .setValues([["Week", "Shift", "Level - Backup"]])
+       .setFontWeight("bold").setBackground(sand);
+  row++;
+
+  var helper = [];
+  for (var hr = 0; hr < records.length; hr++) {
+    helper.push([records[hr].spirit, records[hr].week, records[hr].header,
+                 records[hr].level + " - " + records[hr].unopened, records[hr].seq]);
+  }
+  var hCol = CONFIG.HELPER_START_COL;
+  if (helper.length > 0) {
+    ensureCapacity(sheet, helper.length + 10, hCol + CONFIG.HELPER_COL_COUNT);
+    sheet.getRange(1, hCol, helper.length, CONFIG.HELPER_COL_COUNT).setValues(helper);
+    var c1 = columnToLetter(hCol), c2 = columnToLetter(hCol + 1), c3 = columnToLetter(hCol + 2),
+        c4 = columnToLetter(hCol + 3), c5 = columnToLetter(hCol + 4);
+    sheet.getRange(row, 1).setFormula(
+      '=IFERROR(QUERY(' + c1 + '1:' + c5 + helper.length +
+      ',"select ' + c2 + ',' + c3 + ',' + c4 +
+      ' where ' + c1 + ' = "&CHAR(34)&B' + searchRow + '&CHAR(34)&"' +
+      ' order by ' + c5 + ' desc limit 12",0),"Pick a bottle above to see its history")');
+  } else {
+    sheet.getRange(row, 1).setValue("No history recorded yet.").setFontStyle("italic").setFontColor(muted);
+  }
+  sheet.hideColumns(hCol, CONFIG.HELPER_COL_COUNT);
+  row += 14;   // the QUERY is capped at 12 rows, so the next block has a fixed home
+
+  // ---- 3. ORDER THIS WEEK ----
+  sheet.getRange(row, 1, 1, 5).merge()
+       .setValue("ORDER THIS WEEK")
+       .setFontWeight("bold").setFontSize(12).setFontColor("#FFFFFF")
+       .setBackground(CONFIG.COLORS.terracotta);
+  row++;
+  sheet.getRange(row, 1, 1, 5)
+       .setValues([["Bottle", "Open bottle", "Backups", "Buy", "Last counted"]])
+       .setFontWeight("bold").setBackground(sand);
+  row++;
+  if (!orderRows.length) {
+    sheet.getRange(row, 1).setValue("Nothing to order — no bottle is low without backups behind it.")
+         .setFontStyle("italic").setFontColor(muted);
+    row++;
+  } else {
+    var orderVals = [];
+    for (var ov = 0; ov < orderRows.length; ov++) orderVals.push(orderRows[ov].row);
+    sheet.getRange(row, 1, orderVals.length, 5).setValues(orderVals);
+    sheet.getRange(row, 4, orderVals.length, 1).setFontWeight("bold").setHorizontalAlignment("center");
+    for (var oc = 0; oc < orderRows.length; oc++) {
+      sheet.getRange(row + oc, 2).setBackground(getLevelColor(
+        orderRows[oc].row[1] === "Empty" ? "E" : orderRows[oc].row[1].replace(" full", "")));
+    }
+    row += orderVals.length;
+  }
+  row += 2;
+
+  // ---- 4. COUNTS NEEDING A CHECK ----
+  if (suspects.length > 0) {
+    sheet.getRange(row, 1, 1, 5).merge()
+         .setValue("COUNTS NEEDING A CHECK   (nearly every bottle recorded the same)")
+         .setFontWeight("bold").setFontSize(12).setFontColor("#FFFFFF")
+         .setBackground("#b08a3e");
+    row++;
+    sheet.getRange(row, 1, 1, 2).setValues([["Week", "Shift"]])
+         .setFontWeight("bold").setBackground(sand);
+    row++;
+    sheet.getRange(row, 1, suspects.length, 2).setValues(suspects)
+         .setBackground(CONFIG.SHEET_COLORS.flagBg);
+    row += suspects.length + 2;
+  }
+
+  // ---- 5. CHRONIC LOW STOCK ----
+  sheet.getRange(row, 1, 1, 5).merge()
+       .setValue("CHRONIC LOW STOCK   (last " + CONFIG.ANALYSIS_WEEKS + " weeks)")
+       .setFontWeight("bold").setFontSize(12).setFontColor("#FFFFFF")
+       .setBackground("#8a4a38");
   row++;
   sheet.getRange(row, 1, 1, 4)
        .setValues([["Bottle", "Times Low", "Last Seen", "Action"]])
@@ -1160,13 +1380,9 @@ function refreshDashboard(ss) {
 
   var chronic = [];
   for (var cs = 0; cs < spirits.length; cs++) {
-    var cname = spirits[cs];
-    var clist = bySpirit[cname];
-    var hits = [];
+    var cname = spirits[cs], clist = bySpirit[cname], hits = [];
     for (var q = 0; q < clist.length; q++) {
-      if (recentWeeks[clist[q].week] && CONFIG.LOW_STOCK_LEVELS.indexOf(clist[q].level) !== -1) {
-        hits.push(clist[q]);
-      }
+      if (recentWeeks[clist[q].week] && CONFIG.LOW_STOCK_LEVELS.indexOf(clist[q].level) !== -1) hits.push(clist[q]);
     }
     if (hits.length >= CONFIG.CHRONIC_THRESHOLD) {
       hits.sort(function (x, y) { return y.seq - x.seq; });
@@ -1174,8 +1390,7 @@ function refreshDashboard(ss) {
     }
   }
   chronic.sort(function (x, y) { return y[1] - x[1]; });
-
-  if (chronic.length === 0) {
+  if (!chronic.length) {
     sheet.getRange(row, 1).setValue("None — nothing ran low repeatedly.")
          .setFontStyle("italic").setFontColor(muted);
     row++;
@@ -1186,75 +1401,50 @@ function refreshDashboard(ss) {
   }
   row += 2;
 
-  sheet.getRange(row, 1).setValue("PAR LEVELS   (current vs suggested, last " + CONFIG.ANALYSIS_WEEKS + " weeks)")
-       .setFontWeight("bold").setFontSize(12).setFontColor("#3d5566");
+  // ---- 6. PAR LEVELS ----
+  sheet.getRange(row, 1, 1, 5).merge()
+       .setValue("PAR LEVELS   (current vs suggested, last " + CONFIG.ANALYSIS_WEEKS + " weeks)")
+       .setFontWeight("bold").setFontSize(12).setFontColor("#FFFFFF")
+       .setBackground(CONFIG.SHEET_COLORS.colHeaderBg);
   row++;
   sheet.getRange(row, 1, 1, 5)
        .setValues([["Bottle", "Current Par", "Suggested", "Avg Fill", "Flag"]])
        .setFontWeight("bold").setBackground(sand);
   row++;
 
-  var parRows = [];
-  var flagRows = [];
-
-  for (var ps = 0; ps < spirits.length; ps++) {
-    var pname = spirits[ps];
-    var plist = bySpirit[pname];
-    var used = [];
-    for (var pi = 0; pi < plist.length; pi++) {
-      if (recentWeeks[plist[pi].week]) used.push(plist[pi]);
-    }
-    if (used.length === 0) continue;
-
-    var fillSum = 0, backupSum = 0;
-    for (var u = 0; u < used.length; u++) {
-      var frac = LEVEL_TO_FRACTION[used[u].level];
-      fillSum += (frac === undefined ? 0 : frac);
-      backupSum += (parseFloat(used[u].unopened) || 0);
-    }
-
-    var avgFill = fillSum / used.length;
-    var avgBackup = backupSum / used.length;
-    var suggested = Math.max(1, Math.round(avgBackup + (1 - avgFill) + 0.5));
-
-    var currentPar = currentPars[pname];
+  var parRows = [], flagRows = [];
+  for (var qs = 0; qs < spirits.length; qs++) {
+    var qname = spirits[qs];
+    if (suggestedPar[qname] === undefined) continue;
+    var currentPar = currentPars[qname];
     var currentNum = parseFloat(currentPar);
     var flag = "";
-
-    if (currentPar === undefined || currentPar === "") {
-      flag = "Not set";
-    } else if (!isNaN(currentNum)) {
-      if (currentNum < suggested) flag = "Under by " + (suggested - currentNum);
-      else if (currentNum > suggested + 1) flag = "Over by " + (currentNum - suggested);
+    if (currentPar === undefined || currentPar === "") flag = "Not set";
+    else if (!isNaN(currentNum)) {
+      if (currentNum < suggestedPar[qname]) flag = "Under by " + (suggestedPar[qname] - currentNum);
+      else if (currentNum > suggestedPar[qname] + 1) flag = "Over by " + (currentNum - suggestedPar[qname]);
     }
-
-    parRows.push([
-      pname,
-      currentPar === undefined ? "" : currentPar,
-      suggested,
-      Math.round(avgFill * 100) + "%",
-      flag
-    ]);
+    parRows.push([qname, currentPar === undefined ? "" : currentPar,
+                  suggestedPar[qname], avgFillPct[qname] + "%", flag]);
     flagRows.push(flag !== "");
   }
-
-  if (parRows.length === 0) {
-    sheet.getRange(row, 1).setValue("Not enough data yet.")
-         .setFontStyle("italic").setFontColor(muted);
+  if (!parRows.length) {
+    sheet.getRange(row, 1).setValue("Not enough data yet.").setFontStyle("italic").setFontColor(muted);
     row++;
   } else {
     sheet.getRange(row, 1, parRows.length, 5).setValues(parRows);
     for (var fr = 0; fr < flagRows.length; fr++) {
-      if (flagRows[fr]) {
-        sheet.getRange(row + fr, 5).setBackground(CONFIG.SHEET_COLORS.flagBg).setFontWeight("bold");
-      }
+      if (flagRows[fr]) sheet.getRange(row + fr, 5).setBackground(CONFIG.SHEET_COLORS.flagBg).setFontWeight("bold");
     }
     row += parRows.length;
   }
   row += 2;
 
-  sheet.getRange(row, 1).setValue("FILL TREND   (last " + CONFIG.TREND_WEEKS + " weeks, left = oldest)")
-       .setFontWeight("bold").setFontSize(12).setFontColor(navy);
+  // ---- 7. FILL TREND ----
+  sheet.getRange(row, 1, 1, 5).merge()
+       .setValue("FILL TREND   (last " + CONFIG.TREND_WEEKS + " weeks, left = oldest)")
+       .setFontWeight("bold").setFontSize(12).setFontColor("#FFFFFF")
+       .setBackground(CONFIG.SHEET_COLORS.colHeaderBg);
   row++;
   sheet.getRange(row, 1, 1, 3)
        .setValues([["Bottle", "Trend", "Latest Reading"]])
@@ -1262,18 +1452,12 @@ function refreshDashboard(ss) {
   row++;
 
   var trendWeekNames = weekSheets.slice(0, CONFIG.TREND_WEEKS)
-    .map(function (s) { return s.getName(); })
-    .reverse();
-
-  var trendNames = [];
-  var trendFormulas = [];
-  var trendLatest = [];
+    .map(function (s) { return s.getName(); }).reverse();
+  var trendNames = [], trendFormulas = [], trendLatest = [];
 
   for (var ts = 0; ts < spirits.length; ts++) {
-    var tname = spirits[ts];
-    var tlist = bySpirit[tname];
-    if (tlist.length === 0) continue;
-
+    var tname = spirits[ts], tlist = bySpirit[tname];
+    if (!tlist.length) continue;
     var points = [];
     for (var tw = 0; tw < trendWeekNames.length; tw++) {
       var sum = 0, count = 0;
@@ -1285,18 +1469,11 @@ function refreshDashboard(ss) {
       }
       if (count > 0) points.push(Math.round((sum / count) * 1000) / 1000);
     }
-    if (points.length === 0) continue;
-
-    var newest = tlist[0];
-    for (var n = 1; n < tlist.length; n++) {
-      if (tlist[n].seq > newest.seq) newest = tlist[n];
-    }
-
+    if (!points.length) continue;
+    var newest = latest[tname] || tlist[0];
     trendNames.push([tname]);
-    trendFormulas.push([
-      '=SPARKLINE({' + points.join(",") + '},{"charttype","column";"color","' +
-      CONFIG.COLORS.terracotta + '";"ymin",0;"ymax",1})'
-    ]);
+    trendFormulas.push(['=SPARKLINE({' + points.join(",") + '},{"charttype","column";"color","' +
+      CONFIG.COLORS.terracotta + '";"ymin",0;"ymax",1})']);
     trendLatest.push([describeLevel(newest.level) + "  (" + newest.header + ")"]);
   }
 
@@ -1307,85 +1484,17 @@ function refreshDashboard(ss) {
          .setFontColor(muted).setFontSize(10);
     row += trendNames.length;
   } else {
-    sheet.getRange(row, 1).setValue("Not enough data yet.")
-         .setFontStyle("italic").setFontColor(muted);
+    sheet.getRange(row, 1).setValue("Not enough data yet.").setFontStyle("italic").setFontColor(muted);
     row++;
   }
-  row += 2;
-
-  sheet.getRange(row, 1).setValue("SEARCH A BOTTLE")
-       .setFontWeight("bold").setFontSize(12).setFontColor(navy);
-  row++;
-
-  sheet.getRange(row, 1).setValue("Pick a bottle:").setFontWeight("bold");
-
-  var searchCell = sheet.getRange(row, 2);
-  searchCell.setBackground(CONFIG.SHEET_COLORS.searchBg)
-            .setFontWeight("bold")
-            .setDataValidation(
-              SpreadsheetApp.newDataValidation()
-                .requireValueInList(spirits, true)
-                .setAllowInvalid(false)
-                .build()
-            );
-  if (savedSearch) searchCell.setValue(savedSearch);
-
-  PropertiesService.getScriptProperties()
-    .setProperty("searchCellA1", searchCell.getA1Notation());
-
-  var searchRow = row;
-  row++;
-
-  sheet.getRange(row, 1, 1, 3)
-       .setValues([["Week", "Shift", "Level - Backup"]])
-       .setFontWeight("bold").setBackground(sand);
-  row++;
-
-  var helper = [];
-  for (var hr = 0; hr < records.length; hr++) {
-    helper.push([
-      records[hr].spirit,
-      records[hr].week,
-      records[hr].header,
-      records[hr].level + " - " + records[hr].unopened,
-      records[hr].seq
-    ]);
-  }
-
-  var hCol = CONFIG.HELPER_START_COL;
-
-  if (helper.length > 0) {
-    ensureCapacity(sheet, helper.length + 10, hCol + CONFIG.HELPER_COL_COUNT);
-    sheet.getRange(1, hCol, helper.length, CONFIG.HELPER_COL_COUNT).setValues(helper);
-
-    var c1 = columnToLetter(hCol);
-    var c2 = columnToLetter(hCol + 1);
-    var c3 = columnToLetter(hCol + 2);
-    var c4 = columnToLetter(hCol + 3);
-    var c5 = columnToLetter(hCol + 4);
-
-    var formula =
-      '=IFERROR(QUERY(' + c1 + '1:' + c5 + helper.length +
-      ',"select ' + c2 + ',' + c3 + ',' + c4 +
-      ' where ' + c1 + ' = "&CHAR(34)&B' + searchRow + '&CHAR(34)&"' +
-      ' order by ' + c5 + ' desc",0),"Pick a bottle above to see its history")';
-
-    sheet.getRange(row, 1).setFormula(formula);
-  } else {
-    sheet.getRange(row, 1).setValue("No history recorded yet.")
-         .setFontStyle("italic").setFontColor(muted);
-  }
-
-  sheet.hideColumns(hCol, CONFIG.HELPER_COL_COUNT);
 
   sheet.setColumnWidth(1, 230);
-  sheet.setColumnWidth(2, 130);
-  sheet.setColumnWidth(3, 130);
-  sheet.setColumnWidth(4, 110);
-  sheet.setColumnWidth(5, 130);
+  sheet.setColumnWidth(2, 150);
+  sheet.setColumnWidth(3, 110);
+  sheet.setColumnWidth(4, 90);
+  sheet.setColumnWidth(5, 170);
   sheet.setFrozenRows(2);
 
-  // v6: redraw the bartender roster in G-I.
   try {
     writeRosterToDashboard(sheet, ROSTER_ROW);
     sheet.setColumnWidth(ROSTER_COL, 150);
@@ -1563,9 +1672,9 @@ const ROSTER_PROP_KEY = "bartenderRoster";
 const ROSTER_ANCHOR_PROP = "bartenderRosterRow";
 const ROSTER_TITLE = "BARTENDERS - nightly reminder list";
 const ROSTER_COLS = ["Name", "Email", "Active?"];
-// Columns G-I: clear of the main body and of the per-bottle history
-// QUERY below it, which grows to an unpredictable length.
-const ROSTER_COL = 7;
+// Columns J-L. Not G-I: the new week-coverage strip spans A-G, and a
+// roster of eight or more names would grow down into it.
+const ROSTER_COL = 10;
 const ROSTER_ROW = 2;
 const REMINDER_HOUR = 21;
 const REMINDER_MINUTE = 30;
@@ -1618,6 +1727,9 @@ function readRosterFromDashboard(sheet) {
     for (var i = 0; i < vals.length; i++) {
       var nm = String(vals[i][0]).trim();
       if (!nm) continue;
+      // The empty-state line lives in the Name cell, so without this it
+      // gets stored as a bartender called "(nobody yet...)".
+      if (nm.indexOf("(nobody yet") === 0) continue;
       list.push({
         name: nm,
         email: String(vals[i][1]).trim(),
@@ -1816,6 +1928,7 @@ function simulateFormSubmit() {
 //   listGridCoverage        - checks every spirit appears exactly once
 //   gridCategoryChunks      - used only by the two above
 //   findItemIndexByTitle    - used only by the two above
+//   seedParLevelsFromSuggested - run once, fills the empty Par column
 //
 // Keep it if you would rather be able to rebuild the form later.
 // Deleting it leaves roughly a dozen names in the dropdown instead of
@@ -1877,6 +1990,56 @@ function addEmailQuestion() {
     Logger.log("No Bartender question found - Email left where it is.");
   }
   Logger.log(existing ? "Email question refreshed." : "Email question added.");
+}
+
+// Writes the suggested par into the Par Level column of the current
+// week's tab, but only where it is blank - it never overwrites a number
+// somebody set on purpose. Without this the Par column stays empty, the
+// dashboard reads "Not set" for all 44 bottles, and the colour coding on
+// the week tabs has no baseline to compare against.
+function seedParLevelsFromSuggested() {
+  var ss = getSpreadsheet();
+  var spirits = getAllSpirits();
+  var name = getWeekRange(new Date()).name;
+  var sheet = ss.getSheetByName(name);
+  if (!sheet) {
+    Logger.log("No tab for " + name + " yet - it is created on the first count of the week.");
+    return;
+  }
+
+  var data = collectHistory(ss);
+  var weekSheets = data.weekSheets, bySpirit = data.bySpirit;
+  var recent = {};
+  var slice = weekSheets.slice(0, CONFIG.ANALYSIS_WEEKS);
+  for (var a = 0; a < slice.length; a++) recent[slice[a].getName()] = true;
+
+  var rows = Math.min(spirits.length, sheet.getLastRow() - 1);
+  if (rows < 1) { Logger.log("That tab has no bottles listed yet."); return; }
+  var names = sheet.getRange(2, 1, rows, 1).getValues();
+  var pars = sheet.getRange(2, 2, rows, 1).getValues();
+
+  var filled = 0, skipped = 0, noData = 0;
+  for (var i = 0; i < rows; i++) {
+    if (pars[i][0] !== "" && pars[i][0] !== null) { skipped++; continue; }
+    var list = bySpirit[names[i][0]] || [];
+    var fillSum = 0, backupSum = 0, used = 0;
+    for (var j = 0; j < list.length; j++) {
+      if (!recent[list[j].week]) continue;
+      var f = LEVEL_TO_FRACTION[list[j].level];
+      fillSum += (f === undefined ? 0 : f);
+      backupSum += (parseFloat(list[j].unopened) || 0);
+      used++;
+    }
+    if (!used) { noData++; continue; }
+    pars[i][0] = Math.max(1, Math.round((backupSum / used) + (1 - (fillSum / used)) + 0.5));
+    filled++;
+  }
+
+  sheet.getRange(2, 2, rows, 1).setValues(pars);
+  Logger.log("Par levels seeded on " + name + ": " + filled + " filled, " +
+             skipped + " left alone (already set), " + noData + " had no recent data.");
+  Logger.log("These are a starting point from the last " + CONFIG.ANALYSIS_WEEKS +
+             " weeks - correct any that look wrong, they carry forward each week.");
 }
 
 function installReminderTrigger() {

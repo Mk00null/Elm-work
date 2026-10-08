@@ -1798,31 +1798,19 @@ const EMAIL_QUESTION_HELP =
 function addEmailQuestion() {
   var form = getForm();
   var items = form.getItems();
-  var bartenderIndex = -1;
+  var existing = null, bartenderIndex = -1;
 
   for (var i = 0; i < items.length; i++) {
     var t = String(items[i].getTitle()).trim().toLowerCase();
-    if (t === EMAIL_QUESTION_TITLE.toLowerCase()) {
-      // Already there - just make sure the wording and rules are current.
-      var existing = items[i].asTextItem();
-      existing.setHelpText(EMAIL_QUESTION_HELP).setRequired(true);
-      try {
-        existing.setValidation(FormApp.createTextValidation()
-          .setHelpText("Please enter a valid email address.")
-          .requireTextIsEmail().build());
-      } catch (vErr) {
-        Logger.log("Email validation not applied: " + vErr);
-      }
-      Logger.log("Email question was already on the form - wording refreshed.");
-      return;
-    }
-    if (t.indexOf("bartender") === 0) bartenderIndex = i;
+    if (t === EMAIL_QUESTION_TITLE.toLowerCase()) existing = items[i];
+    else if (t.indexOf("bartender") === 0) bartenderIndex = i;
   }
 
-  var item = form.addTextItem()
-    .setTitle(EMAIL_QUESTION_TITLE)
-    .setHelpText(EMAIL_QUESTION_HELP)
-    .setRequired(true);
+  var item = existing || form.addTextItem();
+  item = item.asTextItem();
+  item.setTitle(EMAIL_QUESTION_TITLE)
+      .setHelpText(EMAIL_QUESTION_HELP)
+      .setRequired(true);
   try {
     item.setValidation(FormApp.createTextValidation()
       .setHelpText("Please enter a valid email address.")
@@ -1830,8 +1818,25 @@ function addEmailQuestion() {
   } catch (vErr) {
     Logger.log("Email validation not applied: " + vErr);
   }
-  if (bartenderIndex >= 0) form.moveItem(item, bartenderIndex + 1);
-  Logger.log("Email question added, directly under Bartender.");
+
+  // moveItem takes indexes, not an Item subtype - passing a TextItem
+  // throws "parameters don't match the method signature".
+  if (bartenderIndex >= 0) {
+    var target = bartenderIndex + 1;
+    var from = item.getIndex();
+    if (from !== target) {
+      try {
+        form.moveItem(from, target);
+        Logger.log("Email question positioned directly under Bartender.");
+      } catch (mErr) {
+        Logger.log("Could not move the Email question (it is on the form, " +
+                   "just not under Bartender - drag it there): " + mErr);
+      }
+    }
+  } else {
+    Logger.log("No Bartender question found - Email left where it is.");
+  }
+  Logger.log(existing ? "Email question refreshed." : "Email question added.");
 }
 
 // ---- 3. BARTENDER ROSTER + NIGHTLY REMINDER --------------------------

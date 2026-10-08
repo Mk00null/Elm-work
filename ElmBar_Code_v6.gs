@@ -1164,6 +1164,26 @@ function refreshDashboard(ss) {
   if (weekSheet && weekSheet.getLastColumn() >= 3) {
     weekHeaders = weekSheet.getRange(1, 3, 1, weekSheet.getLastColumn() - 2).getValues()[0];
   }
+  // A header whose typed date falls outside the week it is filed under is
+  // a typo at entry time - "8/6" keyed instead of "10/6". It still counts
+  // as a night that was counted, and it is surfaced in AT A GLANCE so it
+  // gets corrected rather than silently skewing every date on this page.
+  var misdated = [];
+  for (var mh = 0; mh < weekHeaders.length; mh++) {
+    var mtxt = String(weekHeaders[mh]);
+    var mm = mtxt.match(/^(\d{1,2})\/(\d{1,2})/);
+    if (!mm) continue;
+    var inWeek = false;
+    for (var md2 = 0; md2 < 7; md2++) {
+      var probe = new Date(wk.weekStart);
+      probe.setDate(wk.weekStart.getDate() + md2);
+      if ((probe.getMonth() + 1) === parseInt(mm[1], 10) && probe.getDate() === parseInt(mm[2], 10)) {
+        inWeek = true; break;
+      }
+    }
+    if (!inWeek) misdated.push(mtxt.replace(/\n/g, " "));
+  }
+
   var DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
   var covLabels = [], covMarks = [], covColors = [], nightsCounted = 0;
   for (var d = 0; d < 7; d++) {
@@ -1180,6 +1200,9 @@ function refreshDashboard(ss) {
     covMarks.push(hit ? "✓" : (future ? "" : "—"));
     covColors.push(hit ? CONFIG.SHEET_COLORS.ok : (future ? "#FFFFFF" : CONFIG.SHEET_COLORS.empty));
   }
+
+  var nightsText = nightsCounted + " of 7" +
+    (misdated.length ? "   (+" + misdated.length + " with a wrong date)" : "");
 
   // ---------- suspect counts (straight-line flags live in week-tab headers) ----------
   var suspects = [];
@@ -1203,17 +1226,27 @@ function refreshDashboard(ss) {
   var lastCountText = "No counts recorded yet";
   var daysSince = null;
   if (newestRec) {
+    var now = new Date();
+    var today0 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     var md = String(newestRec.header).match(/^(\d{1,2})\/(\d{1,2})/);
+    var typedBad = false;
     if (md) {
-      var now = new Date();
       var guess = new Date(now.getFullYear(), parseInt(md[1], 10) - 1, parseInt(md[2], 10));
       if (guess.getTime() - now.getTime() > 45 * 86400000) guess.setFullYear(now.getFullYear() - 1);
-      daysSince = Math.floor((new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
-                              - guess.getTime()) / 86400000);
+      // Trust the week tab over the typed date. A count filed in this
+      // week cannot be two months old, however it was keyed in.
+      var wkStart = weekNameToTimestamp(newestRec.week);
+      if (wkStart && guess.getTime() < wkStart - 86400000) {
+        typedBad = true;
+        guess = new Date(wkStart);
+      }
+      daysSince = Math.floor((today0.getTime() - guess.getTime()) / 86400000);
+      if (daysSince < 0) daysSince = 0;
     }
     lastCountText = newestRec.header.replace(/\n/g, " ") +
       (daysSince === null ? "" : (daysSince <= 0 ? "   (today)" :
-        daysSince === 1 ? "   (yesterday)" : "   (" + daysSince + " days ago)"));
+        daysSince === 1 ? "   (yesterday)" : "   (" + daysSince + " days ago)")) +
+      (typedBad ? "   \u2014 date was typed wrong" : "");
   }
 
   var lowNow = {};
@@ -1243,37 +1276,50 @@ function refreshDashboard(ss) {
   sheet.getRange(row, 1, 1, 5).merge()
        .setValue("AT A GLANCE")
        .setFontWeight("bold").setFontSize(12).setFontColor("#FFFFFF")
-       .setBackground(CONFIG.SHEET_COLORS.colHeaderBg);
+       .setBackground(CONFIG.SHEET_COLORS.colHeaderBg).setVerticalAlignment("middle");
+  sheet.setRowHeight(row, 26);
   row++;
 
   var glance = [
     ["Last count", lastCountText],
-    ["Nights counted this week", nightsCounted + " of 7"],
+    ["Nights counted this week", nightsText],
     ["Bottles low right now", String(Object.keys(lowNow).length)],
     ["Bottles to order", String(orderRows.length)],
     ["Counts needing a check", String(suspects.length)]
   ];
-  sheet.getRange(row, 1, glance.length, 2).setValues(glance);
-  sheet.getRange(row, 1, glance.length, 1).setFontWeight("bold").setBackground(sand);
-  if (daysSince !== null && daysSince >= 2) {
-    sheet.getRange(row, 2).setBackground(CONFIG.SHEET_COLORS.flagBg).setFontWeight("bold");
+  for (var gl = 0; gl < glance.length; gl++) {
+    sheet.getRange(row + gl, 1).setValue(glance[gl][0]);
+    // Merge the value across B:E - "8/6 PM Brian Pernia (62 days ago)"
+    // does not fit one column and spilling into the next looks broken.
+    sheet.getRange(row + gl, 2, 1, 4).merge()
+         .setValue(glance[gl][1])
+         .setHorizontalAlignment("left")
+         .setFontSize(12)
+         .setVerticalAlignment("middle");
+    sheet.setRowHeight(row + gl, 24);
   }
-  if (orderRows.length > 0) {
-    sheet.getRange(row + 3, 2).setBackground(CONFIG.SHEET_COLORS.flagBg).setFontWeight("bold");
+  sheet.getRange(row, 1, glance.length, 1)
+       .setFontWeight("bold").setBackground(sand).setVerticalAlignment("middle");
+  function flagGlance(offset) {
+    sheet.getRange(row + offset, 2).setBackground(CONFIG.SHEET_COLORS.flagBg).setFontWeight("bold");
   }
-  if (suspects.length > 0) {
-    sheet.getRange(row + 4, 2).setBackground(CONFIG.SHEET_COLORS.flagBg).setFontWeight("bold");
-  }
+  if (daysSince !== null && daysSince >= 2) flagGlance(0);
+  if (nightsCounted < 3) flagGlance(1);
+  if (orderRows.length > 0) flagGlance(3);
+  if (suspects.length > 0) flagGlance(4);
   row += glance.length + 1;
 
   sheet.getRange(row, 1).setValue("This week, night by night").setFontWeight("bold").setFontColor(muted);
   row++;
   sheet.getRange(row, 1, 1, 7).setValues([covLabels])
-       .setFontSize(9).setFontColor(muted).setHorizontalAlignment("center");
+       .setFontSize(9).setFontColor(muted).setHorizontalAlignment("center")
+       .setFontWeight("bold");
   row++;
   sheet.getRange(row, 1, 1, 7).setValues([covMarks])
        .setBackgrounds([covColors])
-       .setFontWeight("bold").setHorizontalAlignment("center");
+       .setFontWeight("bold").setFontSize(14).setFontColor("#FFFFFF")
+       .setHorizontalAlignment("center").setVerticalAlignment("middle");
+  sheet.setRowHeight(row, 26);
   row += 2;
 
   // ---- 2. SEARCH A BOTTLE (moved to the top: it is the question managers ask most) ----
@@ -1343,6 +1389,9 @@ function refreshDashboard(ss) {
     var orderVals = [];
     for (var ov = 0; ov < orderRows.length; ov++) orderVals.push(orderRows[ov].row);
     sheet.getRange(row, 1, orderVals.length, 5).setValues(orderVals);
+    // Without an explicit format a bare 1 can inherit a percent format
+    // left over in that cell and render as "100%".
+    sheet.getRange(row, 3, orderVals.length, 2).setNumberFormat("0");
     sheet.getRange(row, 4, orderVals.length, 1).setFontWeight("bold").setHorizontalAlignment("center");
     for (var oc = 0; oc < orderRows.length; oc++) {
       sheet.getRange(row + oc, 2).setBackground(getLevelColor(
@@ -1488,12 +1537,15 @@ function refreshDashboard(ss) {
     row++;
   }
 
-  sheet.setColumnWidth(1, 230);
-  sheet.setColumnWidth(2, 150);
-  sheet.setColumnWidth(3, 110);
-  sheet.setColumnWidth(4, 90);
-  sheet.setColumnWidth(5, 170);
+  sheet.setColumnWidth(1, 240);
+  sheet.setColumnWidth(2, 165);
+  sheet.setColumnWidth(3, 105);
+  sheet.setColumnWidth(4, 85);
+  sheet.setColumnWidth(5, 200);
+  sheet.setColumnWidth(6, 110);
+  sheet.setColumnWidth(7, 110);
   sheet.setFrozenRows(2);
+  sheet.setHiddenGridlines(true);
 
   try {
     writeRosterToDashboard(sheet, ROSTER_ROW);
@@ -1682,7 +1734,19 @@ const REMINDER_MINUTE = 30;
 function loadRoster() {
   var raw = PropertiesService.getScriptProperties().getProperty(ROSTER_PROP_KEY);
   if (!raw) return [];
-  try { return JSON.parse(raw); } catch (e) { return []; }
+  var list;
+  try { list = JSON.parse(raw); } catch (e) { return []; }
+  // An earlier version read its own empty-state line back as a name.
+  // Drop it on load so the stored copy heals itself without anyone
+  // having to clear a script property by hand.
+  var clean = [];
+  for (var i = 0; i < list.length; i++) {
+    var nm = String(list[i] && list[i].name || "").trim();
+    if (!nm || nm.indexOf("(nobody yet") === 0) continue;
+    clean.push(list[i]);
+  }
+  if (clean.length !== list.length) saveRoster(clean);
+  return clean;
 }
 
 function saveRoster(list) {

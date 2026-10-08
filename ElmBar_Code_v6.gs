@@ -152,10 +152,7 @@ function onOpen() {
       .addItem("Send Test Entry", "sendTestEntryFromMenu")
       .addItem("Email Form Link to Managers", "emailFormLinkToManagers")
       .addSeparator()
-      .addItem("Set Form to 6 Levels", "applySixLevels")
-      .addItem("Add Email Question to Form", "addEmailQuestion")
       .addItem("Send Bartender Reminder Now", "sendNightlyReminder")
-      .addItem("Install 9:30pm Reminder", "installReminderTrigger")
       .addToUi();
   } catch (e) {
     // Simple triggers cannot always show UI; never let this throw.
@@ -226,162 +223,13 @@ function installFormTrigger() {
 // because every step checks what's actually there first.
 const GRID_TIME_BUDGET_MS = 4 * 60 * 1000; // stop at 4 min, well clear of the 6 min kill
 
-function gridCategoryChunks() {
-  var out = [];
-  for (var cat in SPIRIT_CATEGORIES) {
-    var bottles = SPIRIT_CATEGORIES[cat];
-    var chunks = [];
-    for (var b = 0; b < bottles.length; b += GRID_MAX_ROWS) {
-      chunks.push(bottles.slice(b, b + GRID_MAX_ROWS));
-    }
-    for (var ch = 0; ch < chunks.length; ch++) {
-      out.push({
-        category: cat,
-        rows: chunks[ch],
-        suffix: (chunks.length > 1) ? (" (" + (ch + 1) + " of " + chunks.length + ")") : ""
-      });
-    }
-  }
-  return out;
-}
 
-function convertFormToGridLayout() {
-  var started = new Date().getTime();
-  function outOfTime() { return (new Date().getTime() - started) > GRID_TIME_BUDGET_MS; }
 
-  var form = getForm();
-  var spirits = getAllSpirits();
-  var chunks = gridCategoryChunks();
 
-  var gridsMade = 0, removed = 0, skippedExisting = 0;
-  var ranOut = false;
-
-  // ---- PHASE 1: build any grids that don't exist yet. ----
-  // Grids are created BEFORE anything is deleted, so if this run is
-  // killed the form still holds every original question - no data path
-  // is ever left with neither a grid nor its old questions.
-  // Fetch the item list ONCE and track titles locally. Re-fetching per
-  // chunk cost ~40 API round trips on a resume where nothing needed
-  // building, which is most of why the first run burned its budget.
-  var existingTitles = {};
-  var snapshot = form.getItems();
-  for (var t0 = 0; t0 < snapshot.length; t0++) {
-    existingTitles[String(snapshot[t0].getTitle()).trim()] = true;
-  }
-
-  for (var i = 0; i < chunks.length; i++) {
-    if (outOfTime()) { ranOut = true; break; }
-
-    var ck = chunks[i];
-    var lvlTitle = GRID_LEVEL_PREFIX + " - " + ck.category + ck.suffix;
-    var unTitle = GRID_UNOPENED_PREFIX + " - " + ck.category + ck.suffix;
-
-    if (!existingTitles[lvlTitle]) {
-      var lvl = form.addGridItem();
-      lvl.setTitle(lvlTitle);
-      lvl.setHelpText("Tap the current fill level for each bottle.");
-      lvl.setRows(ck.rows);
-      lvl.setColumns(GRID_LEVEL_COLUMNS);
-      lvl.setRequired(true);
-      existingTitles[lvlTitle] = true;
-      gridsMade++;
-    } else {
-      skippedExisting++;
-    }
-
-    if (!existingTitles[unTitle]) {
-      var un = form.addGridItem();
-      un.setTitle(unTitle);
-      un.setHelpText('How many sealed backup bottles are in the back? Tap "6+" if more than five.');
-      un.setRows(ck.rows);
-      un.setColumns(GRID_UNOPENED_COLUMNS);
-      un.setRequired(true);
-      existingTitles[unTitle] = true;
-      gridsMade++;
-    } else {
-      skippedExisting++;
-    }
-  }
-
-  // ---- PHASE 2: only once ALL grids exist, remove what they replace. ----
-  var allGridsPresent = true;
-  for (var g = 0; g < chunks.length; g++) {
-    if (!existingTitles[GRID_LEVEL_PREFIX + " - " + chunks[g].category + chunks[g].suffix] ||
-        !existingTitles[GRID_UNOPENED_PREFIX + " - " + chunks[g].category + chunks[g].suffix]) {
-      allGridsPresent = false;
-      break;
-    }
-  }
-
-  if (allGridsPresent) {
-    var items = form.getItems();
-    var deleteDeadline = started + (5 * 60 * 1000); // deletion may use up to 5 min
-    for (var d = items.length - 1; d >= 0; d--) {
-      if (new Date().getTime() > deleteDeadline) { ranOut = true; break; }
-      var it = items[d];
-      var t = String(it.getTitle()).trim();
-      var isSpiritQ = spirits.indexOf(t) !== -1;
-      var isUnopenedQ = t.slice(-" - Unopened".length) === " - Unopened";
-      var isCategoryHeader = SPIRIT_CATEGORIES.hasOwnProperty(t);
-      var isBlankQ = (t === "" &&
-        (it.getType() === FormApp.ItemType.MULTIPLE_CHOICE || it.getType() === FormApp.ItemType.TEXT));
-      if (isSpiritQ || isUnopenedQ || isCategoryHeader || isBlankQ) {
-        form.deleteItem(it);
-        removed++;
-      }
-    }
-  }
-
-  Logger.log("---- GRID LAYOUT BUILD ----");
-  Logger.log("Grids created this run: " + gridsMade + " | already existed: " + skippedExisting);
-  Logger.log("Old questions removed this run: " + removed);
-  Logger.log("Form item count is now: " + form.getItems().length);
-
-  if (ranOut || !allGridsPresent) {
-    Logger.log("");
-    Logger.log("*** TIME BUDGET REACHED - NOT FINISHED ***");
-    Logger.log("Nothing is broken: run convertFormToGridLayout() again to continue");
-    Logger.log("where it left off. Repeat until you see the FINISHED message.");
-  } else {
-    Logger.log("FINISHED. Verify with listGridCoverage(), then submit a test entry.");
-  }
-}
 
 // Confirms every spirit appears exactly once in a level grid and once in
 // an unopened grid - i.e. nothing got dropped or duplicated.
-function listGridCoverage() {
-  var form = getForm();
-  var spirits = getAllSpirits();
-  var lvlSeen = {}, unSeen = {};
-  var items = form.getItems();
 
-  for (var i = 0; i < items.length; i++) {
-    if (items[i].getType() !== FormApp.ItemType.GRID) continue;
-    var t = String(items[i].getTitle()).trim();
-    var rows = items[i].asGridItem().getRows();
-    var bucket = (t.indexOf(GRID_UNOPENED_PREFIX) === 0) ? unSeen : lvlSeen;
-    Logger.log(t + "  ->  " + rows.length + " rows");
-    for (var r = 0; r < rows.length; r++) {
-      var rn = String(rows[r]).trim();
-      bucket[rn] = (bucket[rn] || 0) + 1;
-    }
-  }
-
-  var problems = 0;
-  for (var s = 0; s < spirits.length; s++) {
-    var sp = spirits[s];
-    var l = lvlSeen[sp] || 0, u = unSeen[sp] || 0;
-    if (l !== 1 || u !== 1) {
-      Logger.log("PROBLEM: " + sp + " - level grids: " + l + ", unopened grids: " + u + " (each should be exactly 1)");
-      problems++;
-    }
-  }
-  if (problems === 0) {
-    Logger.log("All " + spirits.length + " spirits appear exactly once in a level grid and once in an unopened grid.");
-  } else {
-    Logger.log(problems + " spirit(s) need attention - re-run convertFormToGridLayout().");
-  }
-}
 
 // ---- Grid layout ----
 // Grid titles carry the category so managers can tell them apart in the
@@ -409,12 +257,7 @@ const UNOPENED_CHOICES = GRID_UNOPENED_COLUMNS;
 
 // Finds the current index of the first item whose title matches
 // exactly, in a FRESH items snapshot. Returns -1 if not found.
-function findItemIndexByTitle(items, title) {
-  for (var i = 0; i < items.length; i++) {
-    if (String(items[i].getTitle()).trim() === title) return i;
-  }
-  return -1;
-}
+
 
 
 
@@ -536,82 +379,7 @@ function runDiagnostics() {
 // whatever the form actually is right now (grids included) rather than
 // an assumed layout. Records a "TEST - Diagnostics" column you can
 // delete afterward.
-function simulateFormSubmit() {
-  var form = getForm();
-  var formItems = form.getItems();
-  var fakeItems = [];
 
-  function fakeSimple(title, value) {
-    return {
-      getItem: function () {
-        return {
-          getTitle: function () { return title; },
-          getType: function () { return FormApp.ItemType.TEXT; }
-        };
-      },
-      getResponse: function () { return value; }
-    };
-  }
-
-  fakeItems.push(fakeSimple("Date", Utilities.formatDate(new Date(), Session.getScriptTimeZone() || "America/Chicago", "MM/dd")));
-  fakeItems.push(fakeSimple("Shift", "PM"));
-  fakeItems.push(fakeSimple("Bartender Name", "TEST - Diagnostics"));
-  fakeItems.push(fakeSimple("Notes", "Simulated test submission. Safe to delete this column."));
-
-  var gridsSeen = 0, singlesSeen = 0;
-
-  for (var i = 0; i < formItems.length; i++) {
-    var item = formItems[i];
-    var title = String(item.getTitle()).trim();
-    var lower = title.toLowerCase();
-
-    // Skip the meta questions - already faked above.
-    if (lower.indexOf("date") === 0 || lower.indexOf("shift") === 0 ||
-        lower.indexOf("bartender") === 0 || lower.indexOf("notes") === 0) continue;
-
-    if (item.getType() === FormApp.ItemType.GRID) {
-      var gItem = item.asGridItem();
-      var rows = gItem.getRows();
-      var isUnopened = (title.indexOf(GRID_UNOPENED_PREFIX) === 0);
-      var rowAnswers = [];
-      for (var r = 0; r < rows.length; r++) {
-        rowAnswers.push(isUnopened ? "1" : "1/2");
-      }
-      // Real grid item responses carry the grid item itself, so the
-      // parser can read its rows - mirror that exactly.
-      fakeItems.push({
-        getItem: (function (captured) {
-          return function () { return captured; };
-        })(item),
-        getResponse: (function (captured) {
-          return function () { return captured; };
-        })(rowAnswers)
-      });
-      gridsSeen++;
-      continue;
-    }
-
-    // Per-bottle question (only present if the form isn't fully grid yet)
-    var spiritsList = getAllSpirits();
-    var isUnopenedQ = title.slice(-" - Unopened".length) === " - Unopened";
-    if (spiritsList.indexOf(title) !== -1) {
-      fakeItems.push(fakeSimple(title, "1/2"));
-      singlesSeen++;
-    } else if (isUnopenedQ) {
-      fakeItems.push(fakeSimple(title, "1"));
-      singlesSeen++;
-    }
-  }
-
-  Logger.log("Simulating against the live form: " + gridsSeen + " grid(s), " +
-    singlesSeen + " per-bottle question(s).");
-
-  onFormSubmit({
-    response: { getItemResponses: function () { return fakeItems; } }
-  });
-
-  Logger.log("Simulated submission processed. Check the current week's tab and your email.");
-}
 
 function columnToLetter(column) {
   var letter = "";
@@ -1749,18 +1517,7 @@ function emailFormLinkToManagers() {
 // ---- 1. SIX LEVELS ---------------------------------------------------
 // Run once after pasting this in. It only swaps the COLUMNS on the level
 // grids that already exist - rows, order and everything else untouched.
-function applySixLevels() {
-  var form = getForm();
-  var items = form.getItems(FormApp.ItemType.GRID);
-  var changed = 0;
-  for (var i = 0; i < items.length; i++) {
-    if (String(items[i].getTitle()).indexOf(GRID_LEVEL_PREFIX) !== 0) continue;
-    items[i].asGridItem().setColumns(GRID_LEVEL_COLUMNS);
-    changed++;
-  }
-  Logger.log("Set " + changed + " level grids to: " + GRID_LEVEL_COLUMNS.join(" / "));
-  Logger.log("Unopened grids were not touched.");
-}
+
 
 // ---- 2. STRAIGHT-LINE DETECTION --------------------------------------
 // 09/18 arrived with all 44 bottles at 1/2 and the word "Same" typed in
@@ -1795,49 +1552,7 @@ const EMAIL_QUESTION_HELP =
   "Only used for a 9:30pm reminder on nights the count hasn't been " +
   "submitted yet. Nothing else is sent to this address.";
 
-function addEmailQuestion() {
-  var form = getForm();
-  var items = form.getItems();
-  var existing = null, bartenderIndex = -1;
 
-  for (var i = 0; i < items.length; i++) {
-    var t = String(items[i].getTitle()).trim().toLowerCase();
-    if (t === EMAIL_QUESTION_TITLE.toLowerCase()) existing = items[i];
-    else if (t.indexOf("bartender") === 0) bartenderIndex = i;
-  }
-
-  var item = existing || form.addTextItem();
-  item = item.asTextItem();
-  item.setTitle(EMAIL_QUESTION_TITLE)
-      .setHelpText(EMAIL_QUESTION_HELP)
-      .setRequired(true);
-  try {
-    item.setValidation(FormApp.createTextValidation()
-      .setHelpText("Please enter a valid email address.")
-      .requireTextIsEmail().build());
-  } catch (vErr) {
-    Logger.log("Email validation not applied: " + vErr);
-  }
-
-  // moveItem takes indexes, not an Item subtype - passing a TextItem
-  // throws "parameters don't match the method signature".
-  if (bartenderIndex >= 0) {
-    var target = bartenderIndex + 1;
-    var from = item.getIndex();
-    if (from !== target) {
-      try {
-        form.moveItem(from, target);
-        Logger.log("Email question positioned directly under Bartender.");
-      } catch (mErr) {
-        Logger.log("Could not move the Email question (it is on the form, " +
-                   "just not under Bartender - drag it there): " + mErr);
-      }
-    }
-  } else {
-    Logger.log("No Bartender question found - Email left where it is.");
-  }
-  Logger.log(existing ? "Email question refreshed." : "Email question added.");
-}
 
 // ---- 3. BARTENDER ROSTER + NIGHTLY REMINDER --------------------------
 // The roster is edited ON the Manager Dashboard. Because refreshDashboard
@@ -2003,6 +1718,167 @@ function sendNightlyReminder() {
   Logger.log("Bartender reminders sent: " + sent + " | skipped: " + skipped + " | managers: none.");
 }
 
+
+function simulateFormSubmit() {
+  var form = getForm();
+  var formItems = form.getItems();
+  var fakeItems = [];
+
+  function fakeSimple(title, value) {
+    return {
+      getItem: function () {
+        return {
+          getTitle: function () { return title; },
+          getType: function () { return FormApp.ItemType.TEXT; }
+        };
+      },
+      getResponse: function () { return value; }
+    };
+  }
+
+  fakeItems.push(fakeSimple("Date", Utilities.formatDate(new Date(), Session.getScriptTimeZone() || "America/Chicago", "MM/dd")));
+  fakeItems.push(fakeSimple("Shift", "PM"));
+  fakeItems.push(fakeSimple("Bartender Name", "TEST - Diagnostics"));
+  fakeItems.push(fakeSimple("Notes", "Simulated test submission. Safe to delete this column."));
+
+  var gridsSeen = 0, singlesSeen = 0;
+
+  for (var i = 0; i < formItems.length; i++) {
+    var item = formItems[i];
+    var title = String(item.getTitle()).trim();
+    var lower = title.toLowerCase();
+
+    // Skip the meta questions - already faked above.
+    if (lower.indexOf("date") === 0 || lower.indexOf("shift") === 0 ||
+        lower.indexOf("bartender") === 0 || lower.indexOf("notes") === 0) continue;
+
+    if (item.getType() === FormApp.ItemType.GRID) {
+      var gItem = item.asGridItem();
+      var rows = gItem.getRows();
+      var isUnopened = (title.indexOf(GRID_UNOPENED_PREFIX) === 0);
+      var rowAnswers = [];
+      for (var r = 0; r < rows.length; r++) {
+        rowAnswers.push(isUnopened ? "1" : "1/2");
+      }
+      // Real grid item responses carry the grid item itself, so the
+      // parser can read its rows - mirror that exactly.
+      fakeItems.push({
+        getItem: (function (captured) {
+          return function () { return captured; };
+        })(item),
+        getResponse: (function (captured) {
+          return function () { return captured; };
+        })(rowAnswers)
+      });
+      gridsSeen++;
+      continue;
+    }
+
+    // Per-bottle question (only present if the form isn't fully grid yet)
+    var spiritsList = getAllSpirits();
+    var isUnopenedQ = title.slice(-" - Unopened".length) === " - Unopened";
+    if (spiritsList.indexOf(title) !== -1) {
+      fakeItems.push(fakeSimple(title, "1/2"));
+      singlesSeen++;
+    } else if (isUnopenedQ) {
+      fakeItems.push(fakeSimple(title, "1"));
+      singlesSeen++;
+    }
+  }
+
+  Logger.log("Simulating against the live form: " + gridsSeen + " grid(s), " +
+    singlesSeen + " per-bottle question(s).");
+
+  onFormSubmit({
+    response: { getItemResponses: function () { return fakeItems; } }
+  });
+
+  Logger.log("Simulated submission processed. Check the current week's tab and your email.");
+}
+
+// ============================================================
+// ====  ONE-TIME SETUP  -  SAFE TO DELETE AFTER SETUP  ====
+// ============================================================
+// Everything below this line runs once, by hand, and is never called
+// again. It is down here on its own so you can select from this banner
+// to the end of the file and delete it - which is the only way to get
+// these names out of the Run dropdown. Apps Script lists every
+// top-level function there and gives no way to hide one.
+//
+// Nothing above this line calls anything below it, and no menu item
+// points here, so deleting the block cannot break the nightly job, the
+// form submissions, the dashboard or the reminder.
+//
+//   applySixLevels          - run once, sets the grids to six columns
+//   addEmailQuestion        - run once, adds the Email field
+//   installReminderTrigger  - run once, creates the 9:30pm trigger
+//   convertFormToGridLayout - v5's original form builder
+//   listGridCoverage        - checks every spirit appears exactly once
+//   gridCategoryChunks      - used only by the two above
+//   findItemIndexByTitle    - used only by the two above
+//
+// Keep it if you would rather be able to rebuild the form later.
+// Deleting it leaves roughly a dozen names in the dropdown instead of
+// twenty; the rest are load-bearing and have to stay.
+// ============================================================
+
+function applySixLevels() {
+  var form = getForm();
+  var items = form.getItems(FormApp.ItemType.GRID);
+  var changed = 0;
+  for (var i = 0; i < items.length; i++) {
+    if (String(items[i].getTitle()).indexOf(GRID_LEVEL_PREFIX) !== 0) continue;
+    items[i].asGridItem().setColumns(GRID_LEVEL_COLUMNS);
+    changed++;
+  }
+  Logger.log("Set " + changed + " level grids to: " + GRID_LEVEL_COLUMNS.join(" / "));
+  Logger.log("Unopened grids were not touched.");
+}
+
+function addEmailQuestion() {
+  var form = getForm();
+  var items = form.getItems();
+  var existing = null, bartenderIndex = -1;
+
+  for (var i = 0; i < items.length; i++) {
+    var t = String(items[i].getTitle()).trim().toLowerCase();
+    if (t === EMAIL_QUESTION_TITLE.toLowerCase()) existing = items[i];
+    else if (t.indexOf("bartender") === 0) bartenderIndex = i;
+  }
+
+  var item = existing || form.addTextItem();
+  item = item.asTextItem();
+  item.setTitle(EMAIL_QUESTION_TITLE)
+      .setHelpText(EMAIL_QUESTION_HELP)
+      .setRequired(true);
+  try {
+    item.setValidation(FormApp.createTextValidation()
+      .setHelpText("Please enter a valid email address.")
+      .requireTextIsEmail().build());
+  } catch (vErr) {
+    Logger.log("Email validation not applied: " + vErr);
+  }
+
+  // moveItem takes indexes, not an Item subtype - passing a TextItem
+  // throws "parameters don't match the method signature".
+  if (bartenderIndex >= 0) {
+    var target = bartenderIndex + 1;
+    var from = item.getIndex();
+    if (from !== target) {
+      try {
+        form.moveItem(from, target);
+        Logger.log("Email question positioned directly under Bartender.");
+      } catch (mErr) {
+        Logger.log("Could not move the Email question (it is on the form, " +
+                   "just not under Bartender - drag it there): " + mErr);
+      }
+    }
+  } else {
+    Logger.log("No Bartender question found - Email left where it is.");
+  }
+  Logger.log(existing ? "Email question refreshed." : "Email question added.");
+}
+
 function installReminderTrigger() {
   var all = ScriptApp.getProjectTriggers();
   for (var i = 0; i < all.length; i++) {
@@ -2012,3 +1888,167 @@ function installReminderTrigger() {
     .timeBased().atHour(REMINDER_HOUR).nearMinute(REMINDER_MINUTE).everyDays(1).create();
   Logger.log("Nightly bartender reminder installed for ~" + REMINDER_HOUR + ":" + REMINDER_MINUTE + ".");
 }
+
+function convertFormToGridLayout() {
+  var started = new Date().getTime();
+  function outOfTime() { return (new Date().getTime() - started) > GRID_TIME_BUDGET_MS; }
+
+  var form = getForm();
+  var spirits = getAllSpirits();
+  var chunks = gridCategoryChunks();
+
+  var gridsMade = 0, removed = 0, skippedExisting = 0;
+  var ranOut = false;
+
+  // ---- PHASE 1: build any grids that don't exist yet. ----
+  // Grids are created BEFORE anything is deleted, so if this run is
+  // killed the form still holds every original question - no data path
+  // is ever left with neither a grid nor its old questions.
+  // Fetch the item list ONCE and track titles locally. Re-fetching per
+  // chunk cost ~40 API round trips on a resume where nothing needed
+  // building, which is most of why the first run burned its budget.
+  var existingTitles = {};
+  var snapshot = form.getItems();
+  for (var t0 = 0; t0 < snapshot.length; t0++) {
+    existingTitles[String(snapshot[t0].getTitle()).trim()] = true;
+  }
+
+  for (var i = 0; i < chunks.length; i++) {
+    if (outOfTime()) { ranOut = true; break; }
+
+    var ck = chunks[i];
+    var lvlTitle = GRID_LEVEL_PREFIX + " - " + ck.category + ck.suffix;
+    var unTitle = GRID_UNOPENED_PREFIX + " - " + ck.category + ck.suffix;
+
+    if (!existingTitles[lvlTitle]) {
+      var lvl = form.addGridItem();
+      lvl.setTitle(lvlTitle);
+      lvl.setHelpText("Tap the current fill level for each bottle.");
+      lvl.setRows(ck.rows);
+      lvl.setColumns(GRID_LEVEL_COLUMNS);
+      lvl.setRequired(true);
+      existingTitles[lvlTitle] = true;
+      gridsMade++;
+    } else {
+      skippedExisting++;
+    }
+
+    if (!existingTitles[unTitle]) {
+      var un = form.addGridItem();
+      un.setTitle(unTitle);
+      un.setHelpText('How many sealed backup bottles are in the back? Tap "6+" if more than five.');
+      un.setRows(ck.rows);
+      un.setColumns(GRID_UNOPENED_COLUMNS);
+      un.setRequired(true);
+      existingTitles[unTitle] = true;
+      gridsMade++;
+    } else {
+      skippedExisting++;
+    }
+  }
+
+  // ---- PHASE 2: only once ALL grids exist, remove what they replace. ----
+  var allGridsPresent = true;
+  for (var g = 0; g < chunks.length; g++) {
+    if (!existingTitles[GRID_LEVEL_PREFIX + " - " + chunks[g].category + chunks[g].suffix] ||
+        !existingTitles[GRID_UNOPENED_PREFIX + " - " + chunks[g].category + chunks[g].suffix]) {
+      allGridsPresent = false;
+      break;
+    }
+  }
+
+  if (allGridsPresent) {
+    var items = form.getItems();
+    var deleteDeadline = started + (5 * 60 * 1000); // deletion may use up to 5 min
+    for (var d = items.length - 1; d >= 0; d--) {
+      if (new Date().getTime() > deleteDeadline) { ranOut = true; break; }
+      var it = items[d];
+      var t = String(it.getTitle()).trim();
+      var isSpiritQ = spirits.indexOf(t) !== -1;
+      var isUnopenedQ = t.slice(-" - Unopened".length) === " - Unopened";
+      var isCategoryHeader = SPIRIT_CATEGORIES.hasOwnProperty(t);
+      var isBlankQ = (t === "" &&
+        (it.getType() === FormApp.ItemType.MULTIPLE_CHOICE || it.getType() === FormApp.ItemType.TEXT));
+      if (isSpiritQ || isUnopenedQ || isCategoryHeader || isBlankQ) {
+        form.deleteItem(it);
+        removed++;
+      }
+    }
+  }
+
+  Logger.log("---- GRID LAYOUT BUILD ----");
+  Logger.log("Grids created this run: " + gridsMade + " | already existed: " + skippedExisting);
+  Logger.log("Old questions removed this run: " + removed);
+  Logger.log("Form item count is now: " + form.getItems().length);
+
+  if (ranOut || !allGridsPresent) {
+    Logger.log("");
+    Logger.log("*** TIME BUDGET REACHED - NOT FINISHED ***");
+    Logger.log("Nothing is broken: run convertFormToGridLayout() again to continue");
+    Logger.log("where it left off. Repeat until you see the FINISHED message.");
+  } else {
+    Logger.log("FINISHED. Verify with listGridCoverage(), then submit a test entry.");
+  }
+}
+
+function listGridCoverage() {
+  var form = getForm();
+  var spirits = getAllSpirits();
+  var lvlSeen = {}, unSeen = {};
+  var items = form.getItems();
+
+  for (var i = 0; i < items.length; i++) {
+    if (items[i].getType() !== FormApp.ItemType.GRID) continue;
+    var t = String(items[i].getTitle()).trim();
+    var rows = items[i].asGridItem().getRows();
+    var bucket = (t.indexOf(GRID_UNOPENED_PREFIX) === 0) ? unSeen : lvlSeen;
+    Logger.log(t + "  ->  " + rows.length + " rows");
+    for (var r = 0; r < rows.length; r++) {
+      var rn = String(rows[r]).trim();
+      bucket[rn] = (bucket[rn] || 0) + 1;
+    }
+  }
+
+  var problems = 0;
+  for (var s = 0; s < spirits.length; s++) {
+    var sp = spirits[s];
+    var l = lvlSeen[sp] || 0, u = unSeen[sp] || 0;
+    if (l !== 1 || u !== 1) {
+      Logger.log("PROBLEM: " + sp + " - level grids: " + l + ", unopened grids: " + u + " (each should be exactly 1)");
+      problems++;
+    }
+  }
+  if (problems === 0) {
+    Logger.log("All " + spirits.length + " spirits appear exactly once in a level grid and once in an unopened grid.");
+  } else {
+    Logger.log(problems + " spirit(s) need attention - re-run convertFormToGridLayout().");
+  }
+}
+
+function gridCategoryChunks() {
+  var out = [];
+  for (var cat in SPIRIT_CATEGORIES) {
+    var bottles = SPIRIT_CATEGORIES[cat];
+    var chunks = [];
+    for (var b = 0; b < bottles.length; b += GRID_MAX_ROWS) {
+      chunks.push(bottles.slice(b, b + GRID_MAX_ROWS));
+    }
+    for (var ch = 0; ch < chunks.length; ch++) {
+      out.push({
+        category: cat,
+        rows: chunks[ch],
+        suffix: (chunks.length > 1) ? (" (" + (ch + 1) + " of " + chunks.length + ")") : ""
+      });
+    }
+  }
+  return out;
+}
+
+function findItemIndexByTitle(items, title) {
+  for (var i = 0; i < items.length; i++) {
+    if (String(items[i].getTitle()).trim() === title) return i;
+  }
+  return -1;
+}
+
+

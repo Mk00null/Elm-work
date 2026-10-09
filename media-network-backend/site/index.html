@@ -1,0 +1,446 @@
+<title>Vidar Network</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Layout: long-scroll project site; section rail on the left (wide screens), live TV demo near the top.
+   Single dark look on purpose (it's a TV brand) — every color set explicitly. */
+:root{
+  color-scheme:dark;
+  --void:#0C0D11; --hull:#15161C; --plate:#1E2029; --seam:#2C2F3B;
+  --armor:#5E66BC; --armor-hi:#9AA0F0; --armor-lo:#3A4192;
+  --eye:#F070E0; --tan:#B9B08E; --vent:#FF8A80; --ok:#7BD88F; --warn:#F2C46B;
+  --ink:#E4E6EE; --ink-2:#AEB3C4; --ink-3:#7A8096;
+  --display:"Chakra Petch",ui-sans-serif,system-ui,sans-serif;
+  --body:"IBM Plex Sans",ui-sans-serif,system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{animation:none!important;transition:none!important}}
+body{margin:0;background:var(--void);color:var(--ink);font:16px/1.6 var(--body);padding-inline:16px}
+a{color:var(--armor-hi)}
+:focus-visible{outline:3px solid var(--eye);outline-offset:3px}
+.tv:focus-visible{outline:2px solid var(--armor);outline-offset:4px}
+.wrap{max-width:1180px;margin-inline:auto}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;letter-spacing:.01em}
+h2{font-size:clamp(28px,4vw,40px);font-weight:600}
+h3{font-size:19px;font-weight:600}
+p{margin:0}
+.label{font:500 12px/1 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3)}
+.mono{font-family:var(--mono)}
+section{padding-block:72px;border-top:1px solid var(--seam)}
+section > .wrap{display:grid;gap:28px}
+.lede{color:var(--ink-2);max-width:65ch;font-size:17px}
+
+/* top bar */
+header.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:color-mix(in srgb,var(--void) 88%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--seam);margin-inline:-16px;padding:12px 16px}
+header.bar .wrap{display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px;font:700 18px/1 var(--display);letter-spacing:.28em;color:var(--armor-hi);text-decoration:none}
+.brand img{width:34px;height:34px;object-fit:contain}
+header nav{display:flex;gap:4px;flex-wrap:wrap;margin-left:auto}
+header nav a{color:var(--ink-2);text-decoration:none;font-size:14px;padding:6px 10px;border-radius:6px}
+header nav a:hover{color:var(--ink);background:var(--plate)}
+
+/* hero */
+.hero{padding-block:56px 40px;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:40px;align-items:center}
+.hero h1{font-size:clamp(44px,7vw,84px);font-weight:700;line-height:.95;letter-spacing:.02em}
+.hero h1 span{color:var(--armor-hi)}
+.hero .lede{margin-top:18px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}
+.chip{font:500 12px/1 var(--mono);padding:8px 10px;border:1px solid var(--seam);border-radius:999px;color:var(--ink-2);background:var(--hull)}
+.crest{position:relative;aspect-ratio:1;max-width:100%;display:grid;place-items:center}
+.crest::before{content:"";position:absolute;inset:6%;border-radius:50%;background:radial-gradient(circle at 50% 45%,color-mix(in srgb,var(--armor-lo) 70%,transparent),transparent 65%)}
+.crest img{position:relative;width:78%;filter:drop-shadow(0 0 30px color-mix(in srgb,var(--eye) 35%,transparent))}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.stat{background:var(--hull);border:1px solid var(--seam);border-radius:10px;padding:16px}
+.stat b{display:block;font:600 30px/1.1 var(--display);color:var(--ink);font-variant-numeric:tabular-nums}
+.stat span{font-size:13px;color:var(--ink-3)}
+
+/* ===== live TV demo ===== */
+.tv-frame{background:#050608;border:1px solid var(--seam);border-radius:18px;padding:14px;box-shadow:0 30px 80px -30px #000}
+.tv{position:relative;aspect-ratio:16/9;width:100%;max-width:100%;overflow:hidden;border-radius:8px;background:var(--void);container-type:inline-size;user-select:none}
+.tv::before{content:"";position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(55% 45% at 80% 35%,color-mix(in srgb,var(--armor-lo) 55%,transparent),transparent 70%),
+  radial-gradient(1px 1px at 12% 18%,#fff9,transparent),radial-gradient(1px 1px at 36% 70%,#fff6,transparent),
+  radial-gradient(1px 1px at 61% 12%,#fff8,transparent),radial-gradient(1px 1px at 88% 66%,#fff6,transparent),radial-gradient(1px 1px at 24% 46%,#fff5,transparent)}
+.tv-in{position:absolute;inset:0;padding:3.4cqw 6cqw;display:flex;flex-direction:column;gap:2.4cqw}
+.tv-top{display:flex;align-items:center;gap:1.2cqw}
+.tv-av{width:3.4cqw;height:3.4cqw;border-radius:50%;background:linear-gradient(135deg,var(--armor-lo),var(--eye));flex:none}
+.tv-tab{font-size:1.5cqw;padding:.6cqw 1.5cqw;border-radius:.6cqw;color:var(--ink);white-space:nowrap}
+.tv-tab.on{background:var(--armor-hi);color:#1A1C5C;font-weight:600}
+.tv-brand{margin-left:auto;display:flex;align-items:center;gap:.8cqw;font:700 1.6cqw/1 var(--display);letter-spacing:.3em;color:var(--armor-hi)}
+.tv-brand img{width:4.4cqw;height:4.4cqw;object-fit:contain}
+.f{outline:none}
+.f.focus{box-shadow:0 0 0 .35cqw var(--void),0 0 0 .7cqw var(--armor-hi);transform:scale(1.04);transition:transform .15s,box-shadow .15s}
+.tv-tab.f.focus{transform:none}
+.tv-screen{flex:1;min-height:0;display:flex;flex-direction:column;gap:2cqw}
+.tv-hero{flex:1;min-height:0;border-radius:1cqw;position:relative;overflow:hidden;border:1px solid #ffffff14;
+  background:linear-gradient(90deg,#0C0D11f2 0%,#0C0D1188 45%,transparent 75%),linear-gradient(135deg,var(--plate),#262a66 65%,var(--void))}
+.tv-hero img{position:absolute;right:5cqw;top:50%;transform:translateY(-50%);height:88%;filter:drop-shadow(0 0 3cqw #3A4192aa)}
+.tv-hero .t{position:absolute;left:4cqw;bottom:3.4cqw;display:grid;gap:.9cqw}
+.tv-badge{justify-self:start;font:600 1cqw/1 var(--body);background:var(--tan);color:var(--void);padding:.5cqw .8cqw;border-radius:.4cqw}
+.tv-hero h4{margin:0;font:600 4.4cqw/1 var(--display)}
+.tv-hero p{font-size:1.4cqw;color:var(--ink-2)}
+.tv-btns{display:flex;gap:1cqw}
+.tv-btn{font-size:1.3cqw;padding:.8cqw 1.8cqw;border-radius:3cqw;background:var(--plate);border:1px solid var(--seam)}
+.tv-btn.f.focus{background:var(--armor-hi);color:#1A1C5C;font-weight:600;transform:none}
+.tv-row-h{font:500 1.6cqw/1 var(--body);display:flex;gap:1cqw;align-items:center}
+.tv-row-h i{font:600 1cqw/1 var(--mono);color:var(--eye);font-style:normal;letter-spacing:.1em}
+.tv-row{display:flex;gap:1.6cqw}
+.tv-card{flex:1;aspect-ratio:16/9;border-radius:.7cqw;position:relative;overflow:hidden;border:1px solid #ffffff12;min-width:0}
+.tv-card b{position:absolute;left:.9cqw;bottom:.8cqw;font-size:1.05cqw;font-weight:600;text-shadow:0 1px 3px #000}
+.tv-card .pb{position:absolute;left:0;bottom:0;height:.35cqw;background:var(--armor-hi)}
+.tv-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1.6cqw}
+.tv-cat{aspect-ratio:2.2;border-radius:.8cqw;display:grid;place-items:center;font:500 1.6cqw/1 var(--body);border:1px solid #ffffff12}
+.tv-guide{display:grid;grid-template-columns:14cqw 1fr;gap:.6cqw;font-size:1.15cqw}
+.tv-ch{background:var(--plate);border-radius:.5cqw;padding:.9cqw 1cqw;display:flex;gap:.8cqw;align-items:center}
+.tv-ch em{font:600 .9cqw/1 var(--mono);color:var(--ink-3);font-style:normal}
+.tv-prog{display:flex;gap:.6cqw}
+.tv-prog div{background:var(--hull);border:1px solid var(--seam);border-radius:.5cqw;padding:.9cqw 1cqw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tv-prog .now{border-color:var(--armor);background:color-mix(in srgb,var(--armor-lo) 40%,var(--hull))}
+.tv-apps{display:grid;grid-template-columns:repeat(5,1fr);gap:1.6cqw}
+.tv-app{aspect-ratio:1.5;border-radius:1cqw;display:grid;place-items:center;align-content:center;gap:.6cqw;font:600 1.4cqw/1 var(--body);background:var(--plate);border:1px solid var(--seam);text-align:center}
+.tv-app small{font:400 .95cqw/1.2 var(--body);color:var(--ink-3)}
+.tv-app .dot{width:4cqw;height:4cqw;border-radius:1cqw}
+.tv-toast{position:absolute;left:50%;bottom:3cqw;transform:translateX(-50%);background:var(--plate);border:1px solid var(--armor);padding:1cqw 2cqw;border-radius:1cqw;font-size:1.3cqw;opacity:0;transition:opacity .2s;pointer-events:none}
+.tv-toast.show{opacity:1}
+.remote{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-top:14px}
+.dpad{display:grid;grid-template-columns:repeat(3,44px);grid-template-rows:repeat(3,44px);gap:4px}
+.dpad button,.rbtn{background:var(--plate);color:var(--ink);border:1px solid var(--seam);border-radius:10px;font:600 15px var(--body);cursor:pointer}
+.dpad button:hover,.rbtn:hover{border-color:var(--armor)}
+.dpad .ok{background:var(--armor-lo);border-color:var(--armor)}
+.rbtn{padding:10px 14px}
+.hint{font-size:13px;color:var(--ink-3)}
+.hint kbd{font:500 12px var(--mono);background:var(--plate);border:1px solid var(--seam);border-radius:4px;padding:1px 6px;color:var(--ink-2)}
+
+/* generic grids */
+.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}
+.card{background:var(--hull);border:1px solid var(--seam);border-radius:12px;padding:18px;display:grid;gap:8px;align-content:start;min-width:0}
+.card p{color:var(--ink-2);font-size:15px}
+.card .top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.pill{font:500 11px/1 var(--mono);letter-spacing:.08em;padding:5px 8px;border-radius:999px;border:1px solid currentColor;white-space:nowrap}
+.pill.done{color:var(--ok)} .pill.build{color:var(--armor-hi)} .pill.you{color:var(--warn)} .pill.buy{color:var(--tan)}
+.where{font:400 12px/1.4 var(--mono);color:var(--ink-3)}
+
+/* architecture diagram */
+.diagram{overflow-x:auto;background:var(--hull);border:1px solid var(--seam);border-radius:14px;padding:18px}
+.diagram svg{display:block;min-width:760px;width:100%;height:auto}
+.diagram text{font-family:var(--body)}
+
+/* fleet */
+.sites{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(200px,1fr))}
+.site{background:var(--hull);border:1px solid var(--seam);border-radius:12px;padding:16px;display:grid;gap:10px}
+.site h3{font-size:16px}
+.tvrow{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:14px;background:var(--plate);border-radius:8px;padding:8px 10px}
+.tvrow .s{display:flex;align-items:center;gap:6px;font:500 12px var(--mono);color:var(--ink-3)}
+.tvrow .s::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 8px var(--ok)}
+.tvrow.off .s::before{background:var(--vent);box-shadow:0 0 8px var(--vent)}
+
+/* roadmap */
+.road{display:grid;gap:12px}
+.phase{display:grid;grid-template-columns:120px minmax(0,1fr);gap:18px;background:var(--hull);border:1px solid var(--seam);border-radius:12px;padding:18px}
+.phase .wk{font:600 13px/1.3 var(--mono);color:var(--armor-hi)}
+.phase .wk small{display:block;color:var(--ink-3);font-weight:400;margin-top:4px}
+.phase ul{margin:8px 0 0;padding-left:18px;color:var(--ink-2);font-size:15px;display:grid;gap:4px}
+.prog{height:6px;background:var(--plate);border-radius:3px;overflow:hidden;margin-top:12px}
+.prog i{display:block;height:100%;background:linear-gradient(90deg,var(--armor-lo),var(--armor-hi))}
+
+/* tables */
+.tbl{overflow-x:auto;border:1px solid var(--seam);border-radius:12px}
+table{border-collapse:collapse;width:100%;min-width:560px;font-size:15px}
+th,td{text-align:left;padding:12px 14px;border-bottom:1px solid var(--seam);vertical-align:top}
+th{font:500 12px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);background:var(--hull)}
+td.n{font-variant-numeric:tabular-nums;font-family:var(--mono);white-space:nowrap}
+tr:last-child td{border-bottom:0}
+
+/* chat demo */
+.chat{background:var(--hull);border:1px solid var(--seam);border-radius:14px;padding:18px;display:grid;gap:10px;max-width:640px}
+.msg{padding:10px 14px;border-radius:12px;max-width:85%;font-size:15px}
+.msg.me{justify-self:end;background:var(--armor-lo)}
+.msg.bot{background:var(--plate)}
+.msg.bot .act{display:flex;gap:8px;margin-top:8px}
+.msg.bot .act span{font:600 12px var(--mono);padding:6px 10px;border-radius:8px;background:var(--hull);border:1px solid var(--seam)}
+
+/* cannot-add */
+.nope{border-color:color-mix(in srgb,var(--vent) 45%,var(--seam))}
+.nope h3{color:var(--vent)}
+.alt{font-size:14px;color:var(--ink-2);border-top:1px dashed var(--seam);padding-top:8px}
+.alt b{color:var(--ok);font-weight:600}
+
+footer{padding-block:40px;color:var(--ink-3);font-size:13px;border-top:1px solid var(--seam)}
+
+@media (max-width:900px){.hero{grid-template-columns:1fr}.crest{max-width:340px;margin-inline:auto}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.phase{grid-template-columns:1fr;gap:6px}}
+</style>
+
+<header class="bar"><div class="wrap">
+  <a class="brand" href="#top"><img class="logo" src="data:image/svg+xml;base64,PCEtLSBWaWRhciBlbWJsZW0g4oCUIG9yaWdpbmFsIGdlb21ldHJpYyBtZWNoYSBjcmVzdCAoVi1maW4sIHZpc29yLCBtYWdlbnRhIGV5ZXMpLgogICAgIEluc3BpcmVkIGJ5IHRoZSBwYWxldHRlL21vb2Qgb25seTsgbm90IGEgdHJhY2Ugb2YgYW55IGV4aXN0aW5nIGRlc2lnbi4gLS0+CjxzdmcgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB2aWV3Qm94PSIwIDAgNTEyIDUxMiI+CiAgPGRlZnM+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImFybW9yIiB4MT0iMCIgeTE9IjAiIHgyPSIwIiB5Mj0iMSI+CiAgICAgIDxzdG9wIG9mZnNldD0iMCIgc3RvcC1jb2xvcj0iIzhFOTZFMCIvPjxzdG9wIG9mZnNldD0iLjU1IiBzdG9wLWNvbG9yPSIjNUU2NkJDIi8+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjM0E0MTkyIi8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogICAgPGxpbmVhckdyYWRpZW50IGlkPSJmcmFtZSIgeDE9IjAiIHkxPSIwIiB4Mj0iMCIgeTI9IjEiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiMzQTNDNDUiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiMxNjE3MUMiLz4KICAgIDwvbGluZWFyR3JhZGllbnQ+CiAgICA8ZmlsdGVyIGlkPSJnbG93IiB4PSItNTAlIiB5PSItMjAwJSIgd2lkdGg9IjIwMCUiIGhlaWdodD0iNTAwJSI+CiAgICAgIDxmZUdhdXNzaWFuQmx1ciBzdGREZXZpYXRpb249IjYiIHJlc3VsdD0iYiIvPjxmZU1lcmdlPjxmZU1lcmdlTm9kZSBpbj0iYiIvPjxmZU1lcmdlTm9kZSBpbj0iU291cmNlR3JhcGhpYyIvPjwvZmVNZXJnZT4KICAgIDwvZmlsdGVyPgogIDwvZGVmcz4KICA8IS0tIGhlbG1ldCBmcmFtZSAtLT4KICA8cGF0aCBkPSJNMjU2IDE1MCBMMzUwIDE5MCBMMzcyIDI5MCBMMzMwIDM4MCBMMjU2IDQzMCBMMTgyIDM4MCBMMTQwIDI5MCBMMTYyIDE5MCBaIiBmaWxsPSJ1cmwoI2ZyYW1lKSIgc3Ryb2tlPSIjMEIwQzEwIiBzdHJva2Utd2lkdGg9IjgiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KICA8IS0tIHNpZGUgdmVudHMgLS0+CiAgPGcgZmlsbD0iIzBCMEMxMCI+PHBhdGggZD0iTTE3MCAyNTAgbDI2IDggLTQgMTQgLTI2IC04eiIvPjxwYXRoIGQ9Ik0xNjQgMjgyIGwyOCA4IC00IDE0IC0yOCAtOHoiLz4KICAgIDxwYXRoIGQ9Ik0zNDIgMjUwIGwtMjYgOCA0IDE0IDI2IC04eiIvPjxwYXRoIGQ9Ik0zNDggMjgyIGwtMjggOCA0IDE0IDI4IC04eiIvPjwvZz4KICA8IS0tIFYtZmluIHdpbmdzIC0tPgogIDxwYXRoIGQ9Ik0yNTYgMjUwIEw2MCA3MCBMOTIgNjIgTDI3MiAyMTggWiIgZmlsbD0idXJsKCNhcm1vcikiIHN0cm9rZT0iIzBCMEMxMCIgc3Ryb2tlLXdpZHRoPSI4IiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+CiAgPHBhdGggZD0iTTI1NiAyNTAgTDQ1MiA3MCBMNDIwIDYyIEwyNDAgMjE4IFoiIGZpbGw9InVybCgjYXJtb3IpIiBzdHJva2U9IiMwQjBDMTAiIHN0cm9rZS13aWR0aD0iOCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgogIDwhLS0gY2VudGVyIGNyZXN0IC0tPgogIDxwYXRoIGQ9Ik0yNTYgNDAgTDI4NiAxMjAgTDI4MiAzMDAgTDI1NiAzMzAgTDIzMCAzMDAgTDIyNiAxMjAgWiIgZmlsbD0idXJsKCNhcm1vcikiIHN0cm9rZT0iIzBCMEMxMCIgc3Ryb2tlLXdpZHRoPSI4IiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+CiAgPHJlY3QgeD0iMjQwIiB5PSIxOTAiIHdpZHRoPSIzMiIgaGVpZ2h0PSI0NCIgcng9IjUiIGZpbGw9IiMyQzJFMzYiIHN0cm9rZT0iIzBCMEMxMCIgc3Ryb2tlLXdpZHRoPSI1Ii8+CiAgPCEtLSB2aXNvciArIG1hZ2VudGEgZXllcyAtLT4KICA8cGF0aCBkPSJNMTk2IDMxOCBMMjQ2IDMzMCBMMjQ2IDM0NCBMMjAwIDMzNCBaIiBmaWxsPSIjRjA3MEUwIiBmaWx0ZXI9InVybCgjZ2xvdykiLz4KICA8cGF0aCBkPSJNMzE2IDMxOCBMMjY2IDMzMCBMMjY2IDM0NCBMMzEyIDMzNCBaIiBmaWxsPSIjRjA3MEUwIiBmaWx0ZXI9InVybCgjZ2xvdykiLz4KICA8IS0tIGNoaW4gLS0+CiAgPHBhdGggZD0iTTIzOCAzNzAgTDI1NiA0MjAgTDI3NCAzNzAgWiIgZmlsbD0iIzNBNDE5MiIgc3Ryb2tlPSIjMEIwQzEwIiBzdHJva2Utd2lkdGg9IjYiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPC9zdmc+Cg==" alt="">VIDAR</a>
+  <nav aria-label="Sections">
+    <a href="#demo">Live demo</a><a href="#apps">Apps</a><a href="#arch">Architecture</a><a href="#fleet">Fleet</a>
+    <a href="#ai">AI</a><a href="#roadmap">Roadmap</a><a href="#hardware">Hardware</a><a href="#security">Security</a><a href="#cant">Can't add</a>
+  </nav>
+</div></header>
+
+<main id="top">
+<div class="wrap hero">
+  <div>
+    <div class="label">Private home media network · 2026</div>
+    <h1>Seven screens.<br><span>One brain.</span></h1>
+    <p class="lede">Vidar runs your own library, free live channels and remote support across five locations, from a single HP OmniDesk at home. Every TV boots into the same indigo interface, heals itself twice a week, and reports to your phone.</p>
+    <div class="chips"><span class="chip">Jellyfin</span><span class="chip">Tailscale mesh</span><span class="chip">RustDesk</span><span class="chip">NextDNS</span><span class="chip">Ollama</span><span class="chip">Jet Stream UI</span></div>
+  </div>
+  <div class="crest"><img class="logo" src="data:image/svg+xml;base64,PCEtLSBWaWRhciBlbWJsZW0g4oCUIG9yaWdpbmFsIGdlb21ldHJpYyBtZWNoYSBjcmVzdCAoVi1maW4sIHZpc29yLCBtYWdlbnRhIGV5ZXMpLgogICAgIEluc3BpcmVkIGJ5IHRoZSBwYWxldHRlL21vb2Qgb25seTsgbm90IGEgdHJhY2Ugb2YgYW55IGV4aXN0aW5nIGRlc2lnbi4gLS0+CjxzdmcgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB2aWV3Qm94PSIwIDAgNTEyIDUxMiI+CiAgPGRlZnM+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImFybW9yIiB4MT0iMCIgeTE9IjAiIHgyPSIwIiB5Mj0iMSI+CiAgICAgIDxzdG9wIG9mZnNldD0iMCIgc3RvcC1jb2xvcj0iIzhFOTZFMCIvPjxzdG9wIG9mZnNldD0iLjU1IiBzdG9wLWNvbG9yPSIjNUU2NkJDIi8+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjM0E0MTkyIi8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogICAgPGxpbmVhckdyYWRpZW50IGlkPSJmcmFtZSIgeDE9IjAiIHkxPSIwIiB4Mj0iMCIgeTI9IjEiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiMzQTNDNDUiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiMxNjE3MUMiLz4KICAgIDwvbGluZWFyR3JhZGllbnQ+CiAgICA8ZmlsdGVyIGlkPSJnbG93IiB4PSItNTAlIiB5PSItMjAwJSIgd2lkdGg9IjIwMCUiIGhlaWdodD0iNTAwJSI+CiAgICAgIDxmZUdhdXNzaWFuQmx1ciBzdGREZXZpYXRpb249IjYiIHJlc3VsdD0iYiIvPjxmZU1lcmdlPjxmZU1lcmdlTm9kZSBpbj0iYiIvPjxmZU1lcmdlTm9kZSBpbj0iU291cmNlR3JhcGhpYyIvPjwvZmVNZXJnZT4KICAgIDwvZmlsdGVyPgogIDwvZGVmcz4KICA8IS0tIGhlbG1ldCBmcmFtZSAtLT4KICA8cGF0aCBkPSJNMjU2IDE1MCBMMzUwIDE5MCBMMzcyIDI5MCBMMzMwIDM4MCBMMjU2IDQzMCBMMTgyIDM4MCBMMTQwIDI5MCBMMTYyIDE5MCBaIiBmaWxsPSJ1cmwoI2ZyYW1lKSIgc3Ryb2tlPSIjMEIwQzEwIiBzdHJva2Utd2lkdGg9IjgiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KICA8IS0tIHNpZGUgdmVudHMgLS0+CiAgPGcgZmlsbD0iIzBCMEMxMCI+PHBhdGggZD0iTTE3MCAyNTAgbDI2IDggLTQgMTQgLTI2IC04eiIvPjxwYXRoIGQ9Ik0xNjQgMjgyIGwyOCA4IC00IDE0IC0yOCAtOHoiLz4KICAgIDxwYXRoIGQ9Ik0zNDIgMjUwIGwtMjYgOCA0IDE0IDI2IC04eiIvPjxwYXRoIGQ9Ik0zNDggMjgyIGwtMjggOCA0IDE0IDI4IC04eiIvPjwvZz4KICA8IS0tIFYtZmluIHdpbmdzIC0tPgogIDxwYXRoIGQ9Ik0yNTYgMjUwIEw2MCA3MCBMOTIgNjIgTDI3MiAyMTggWiIgZmlsbD0idXJsKCNhcm1vcikiIHN0cm9rZT0iIzBCMEMxMCIgc3Ryb2tlLXdpZHRoPSI4IiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+CiAgPHBhdGggZD0iTTI1NiAyNTAgTDQ1MiA3MCBMNDIwIDYyIEwyNDAgMjE4IFoiIGZpbGw9InVybCgjYXJtb3IpIiBzdHJva2U9IiMwQjBDMTAiIHN0cm9rZS13aWR0aD0iOCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgogIDwhLS0gY2VudGVyIGNyZXN0IC0tPgogIDxwYXRoIGQ9Ik0yNTYgNDAgTDI4NiAxMjAgTDI4MiAzMDAgTDI1NiAzMzAgTDIzMCAzMDAgTDIyNiAxMjAgWiIgZmlsbD0idXJsKCNhcm1vcikiIHN0cm9rZT0iIzBCMEMxMCIgc3Ryb2tlLXdpZHRoPSI4IiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+CiAgPHJlY3QgeD0iMjQwIiB5PSIxOTAiIHdpZHRoPSIzMiIgaGVpZ2h0PSI0NCIgcng9IjUiIGZpbGw9IiMyQzJFMzYiIHN0cm9rZT0iIzBCMEMxMCIgc3Ryb2tlLXdpZHRoPSI1Ii8+CiAgPCEtLSB2aXNvciArIG1hZ2VudGEgZXllcyAtLT4KICA8cGF0aCBkPSJNMTk2IDMxOCBMMjQ2IDMzMCBMMjQ2IDM0NCBMMjAwIDMzNCBaIiBmaWxsPSIjRjA3MEUwIiBmaWx0ZXI9InVybCgjZ2xvdykiLz4KICA8cGF0aCBkPSJNMzE2IDMxOCBMMjY2IDMzMCBMMjY2IDM0NCBMMzEyIDMzNCBaIiBmaWxsPSIjRjA3MEUwIiBmaWx0ZXI9InVybCgjZ2xvdykiLz4KICA8IS0tIGNoaW4gLS0+CiAgPHBhdGggZD0iTTIzOCAzNzAgTDI1NiA0MjAgTDI3NCAzNzAgWiIgZmlsbD0iIzNBNDE5MiIgc3Ryb2tlPSIjMEIwQzEwIiBzdHJva2Utd2lkdGg9IjYiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPC9zdmc+Cg==" alt="Vidar emblem"></div>
+</div>
+<div class="wrap stats" aria-label="At a glance">
+  <div class="stat"><b>7</b><span>Android TV boxes</span></div>
+  <div class="stat"><b>5</b><span>locations on one mesh</span></div>
+  <div class="stat"><b>$0</b><span>monthly software cost</span></div>
+  <div class="stat"><b>Tue · Fri</b><span>04:00 self-maintenance</span></div>
+</div>
+
+<!-- ===== LIVE DEMO ===== -->
+<section id="demo"><div class="wrap">
+  <div><div class="label">Live sample</div><h2>Vidar TV, on every box</h2></div>
+  <p class="lede">This is the interface each TV boots into, built on Google's Jet Stream design. Click inside it, then use your arrow keys and Enter, or the remote below. Tabs, rows and buttons all respond.</p>
+  <div class="tv-frame">
+    <div class="tv" id="tv" tabindex="0" aria-label="Vidar TV interactive demo">
+      <div class="tv-in">
+        <div class="tv-top" id="tabs"></div>
+        <div class="tv-screen" id="screen"></div>
+      </div>
+      <div class="tv-toast" id="toast"></div>
+    </div>
+    <div class="remote">
+      <div class="dpad" aria-label="Remote">
+        <span></span><button data-k="ArrowUp" aria-label="Up">▲</button><span></span>
+        <button data-k="ArrowLeft" aria-label="Left">◀</button><button class="ok" data-k="Enter">OK</button><button data-k="ArrowRight" aria-label="Right">▶</button>
+        <span></span><button data-k="ArrowDown" aria-label="Down">▼</button><span></span>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="rbtn" data-k="Backspace">⟲ Back</button><button class="rbtn" data-k="Home">⌂ Home</button></div>
+      <p class="hint">Keys: <kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd> move · <kbd>Enter</kbd> select · <kbd>Backspace</kbd> back to tabs</p>
+    </div>
+  </div>
+</div></section>
+
+<!-- ===== APPS ===== -->
+<section id="apps"><div class="wrap">
+  <div><div class="label">Software stack</div><h2>Every app in the plan</h2></div>
+  <p class="lede">TV-side apps are installed by one provisioning command. Server apps run on the OmniDesk, most of them in Docker.</p>
+  <h3>On each TV</h3>
+  <div class="grid" id="apps-tv"></div>
+  <h3>On the server</h3>
+  <div class="grid" id="apps-srv"></div>
+</div></section>
+
+<!-- ===== ARCHITECTURE ===== -->
+<section id="arch"><div class="wrap">
+  <div><div class="label">How it connects</div><h2>Architecture</h2></div>
+  <p class="lede">TVs reach the server over a private Tailscale mesh, so nothing on any router is opened. Only the Jellyfin web page is public, through a Cloudflare tunnel with a login wall.</p>
+  <div class="diagram">
+    <svg viewBox="0 0 960 400" role="img" aria-label="Server at home connects to five locations over Tailscale; Cloudflare tunnel serves phones and browsers">
+      <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#5E66BC"/></marker></defs>
+      <rect x="330" y="20" width="300" height="130" rx="12" fill="#1E2029" stroke="#5E66BC" stroke-width="2"/>
+      <text x="480" y="48" text-anchor="middle" fill="#9AA0F0" font-size="15" font-weight="600">HP OmniDesk · home</text>
+      <text x="480" y="74" text-anchor="middle" fill="#AEB3C4" font-size="13">Jellyfin · RustDesk · Uptime Kuma</text>
+      <text x="480" y="94" text-anchor="middle" fill="#AEB3C4" font-size="13">Home Assistant · Jellyseerr · Ollama</text>
+      <text x="480" y="114" text-anchor="middle" fill="#AEB3C4" font-size="13">fleet_db · maintenance · backups</text>
+      <text x="480" y="136" text-anchor="middle" fill="#7A8096" font-size="12">Ryzen 5 8500G · Radeon 740M · 16 GB</text>
+      <rect x="720" y="40" width="210" height="90" rx="12" fill="#15161C" stroke="#B9B08E" stroke-dasharray="5 4"/>
+      <text x="825" y="72" text-anchor="middle" fill="#B9B08E" font-size="14" font-weight="600">Cloudflare tunnel</text>
+      <text x="825" y="94" text-anchor="middle" fill="#AEB3C4" font-size="12">jelly.&lt;domain&gt;.com</text>
+      <text x="825" y="112" text-anchor="middle" fill="#AEB3C4" font-size="12">phones · browsers</text>
+      <line x1="630" y1="85" x2="716" y2="85" stroke="#B9B08E" stroke-width="2" marker-end="url(#ar)"/>
+      <rect x="30" y="40" width="210" height="90" rx="12" fill="#15161C" stroke="#F070E0" stroke-dasharray="5 4"/>
+      <text x="135" y="72" text-anchor="middle" fill="#F070E0" font-size="14" font-weight="600">Your phone</text>
+      <text x="135" y="94" text-anchor="middle" fill="#AEB3C4" font-size="12">Telegram bot · alerts</text>
+      <text x="135" y="112" text-anchor="middle" fill="#AEB3C4" font-size="12">dashboard</text>
+      <line x1="244" y1="85" x2="326" y2="85" stroke="#F070E0" stroke-width="2" marker-end="url(#ar)"/>
+      <text x="480" y="205" text-anchor="middle" fill="#9AA0F0" font-size="13" font-weight="600">Tailscale mesh (100.x) · encrypted · no open ports</text>
+      <g id="sitesvg"></g>
+    </svg>
+  </div>
+</div></section>
+
+<!-- ===== FLEET ===== -->
+<section id="fleet"><div class="wrap">
+  <div><div class="label">Fleet</div><h2>Seven TVs, five places</h2></div>
+  <p class="lede">Example layout from the fleet database. Each location gets its own Jellyfin profile, bitrate cap and language. Status lights here are sample data.</p>
+  <div class="sites" id="sites"></div>
+</div></section>
+
+<!-- ===== AI ===== -->
+<section id="ai"><div class="wrap">
+  <div><div class="label">Vidar Assistant</div><h2>A local AI that runs the fleet</h2></div>
+  <p class="lede">Ollama runs a small model on the server. One Telegram bot answers in Spanish or English, checks status, explains problems and restarts a TV only after you tap confirm.</p>
+  <div class="chat" aria-label="Sample conversation">
+    <div class="msg me">¿Está prendida la tele de la oficina?</div>
+    <div class="msg bot">Sí. <b>OFFICE</b> está en línea desde hace 3 d 4 h, Jellyfin responde en 42 ms y no hay errores desde el mantenimiento del martes.</div>
+    <div class="msg me">The partner TV keeps buffering tonight</div>
+    <div class="msg bot">PARTNER is pulling 14 Mbps on a 12 Mbps cap and the server upload is at 92%. Two other remote streams are active. I can drop that profile to 8 Mbps for tonight, or restart the box.
+      <div class="act"><span>✅ Lower to 8 Mbps</span><span>🔄 Restart TV</span><span>✖ Ignore</span></div></div>
+  </div>
+  <div class="grid" id="ai-tools"></div>
+</div></section>
+
+<!-- ===== ROADMAP ===== -->
+<section id="roadmap"><div class="wrap">
+  <div><div class="label">Build plan</div><h2>Roadmap</h2></div>
+  <p class="lede">Bars show how much of each phase is already written and pushed. Nothing is deployed until you approve it.</p>
+  <div class="road" id="road"></div>
+</div></section>
+
+<!-- ===== HARDWARE ===== -->
+<section id="hardware"><div class="wrap">
+  <div><div class="label">Hardware & budget</div><h2>What it runs on</h2></div>
+  <div class="tbl"><table>
+    <thead><tr><th>Item</th><th>Role</th><th>Status</th><th>Cost</th></tr></thead>
+    <tbody>
+      <tr><td>HP OmniDesk M02-0310</td><td>Server: Ryzen 5 8500G, Radeon 740M, Windows 11</td><td><span class="pill done">OWNED</span></td><td class="n">—</td></tr>
+      <tr><td>16 GB DDR5 (matched pair)</td><td>Room for Docker, Jellyfin transcodes and Ollama</td><td><span class="pill buy">BUY</span></td><td class="n">$35–60</td></tr>
+      <tr><td>4–8 TB drive</td><td>Media library; 512 GB SSD stays for Windows</td><td><span class="pill buy">BUY</span></td><td class="n">$90–150</td></tr>
+      <tr><td>7 × Onn 4K Pro (or RockTek G2 mix)</td><td>One per screen; test one first</td><td><span class="pill buy">BUY</span></td><td class="n">≈ $420</td></tr>
+      <tr><td>UPS battery backup</td><td>Rides through short outages</td><td><span class="pill buy">OPTIONAL</span></td><td class="n">≈ $60</td></tr>
+      <tr><td>Domain on Cloudflare</td><td>jelly.&lt;domain&gt;.com</td><td><span class="pill you">YOU</span></td><td class="n">≈ $10 / yr</td></tr>
+      <tr><td>Backblaze B2</td><td>Encrypted config backups</td><td><span class="pill you">YOU</span></td><td class="n">≈ $1 / mo</td></tr>
+    </tbody>
+  </table></div>
+</div></section>
+
+<!-- ===== SECURITY ===== -->
+<section id="security"><div class="wrap">
+  <div><div class="label">Privacy & security</div><h2>Closed by default</h2></div>
+  <div class="grid">
+    <div class="card"><h3>No open ports</h3><p>ADB, RustDesk and Jellyfin travel inside Tailscale. Routers at all five locations stay untouched.</p></div>
+    <div class="card"><h3>Login wall</h3><p>Cloudflare Access asks for an email code before anyone reaches the public Jellyfin page.</p></div>
+    <div class="card"><h3>Server-only control</h3><p>Tailscale rules let only the server talk to TVs. TVs can't see each other.</p></div>
+    <div class="card"><h3>DNS filtering</h3><p>NextDNS strips trackers, ads and telemetry on every box, with encrypted fallbacks.</p></div>
+    <div class="card"><h3>Two-factor everywhere</h3><p>Cloudflare, Tailscale, NextDNS and router admin. Passwords live in Bitwarden.</p></div>
+    <div class="card"><h3>One VPN rule</h3><p>Android allows one VPN at a time, so TVs run Tailscale only. Bitdefender VPN stays on phones and laptops.</p></div>
+  </div>
+</div></section>
+
+<!-- ===== CAN'T ADD ===== -->
+<section id="cant"><div class="wrap">
+  <div><div class="label">Out of scope</div><h2>Things you want that I can't add</h2></div>
+  <p class="lede">These stay out of the build. Each one comes with the closest thing that is in the plan.</p>
+  <div class="grid" id="cant-list"></div>
+</div></section>
+</main>
+
+<footer><div class="wrap">Vidar · private project · built on Jellyfin, Jet Stream (Apache-2.0), Tailscale and RustDesk. Source: media-network-backend in Mk00null/Elm-work.</div></footer>
+
+<script>
+const LOGO=document.querySelector('.logo').getAttribute('src');
+
+/* ---------- data ---------- */
+const APPS_TV=[
+ ["Vidar TV","Home screen app on Jet Stream: library, live guide, search, favorites.","build","vidar-tv/"],
+ ["Jellyfin client","Fallback player for your library, one profile per location.","done","PROVISIONING_RUNBOOK.md"],
+ ["Live channels (TiviMate)","Free FAST lineups: Pluto TV, Samsung TV Plus, Plex, with XMLTV guide.","build","Phase 3.3"],
+ ["Stremio","Legal add-ons only: Cinemeta, Jellyfin, Trakt, YouTube.","build","Phase 3.3"],
+ ["RustDesk","Unattended remote control through your own server.","done","docker-compose.yml"],
+ ["Tailscale","Private mesh that links all seven boxes to the server.","done","MULTI_SITE.md"],
+ ["Projectivy Launcher","Ad-free fallback home screen until Vidar TV ships.","build","Phase 3.7"],
+ ["NextDNS Private DNS","Tracker and telemetry blocking set over ADB.","done","configure-nextdns.sh"]];
+const APPS_SRV=[
+ ["Jellyfin Server","Your library with AMD AMF hardware transcoding.","done","docker-compose.yml"],
+ ["RustDesk hbbs / hbbr","Self-hosted ID and relay servers.","done","docker-compose.yml"],
+ ["Cloudflare Tunnel","Public HTTPS for the Jellyfin web page only.","done","setup-tunnels.sh"],
+ ["Fleet database","SQLite inventory of every box and location.","done","inventory/fleet_db.py"],
+ ["Maintenance + health","Cache trim and reboot Tue/Fri 04:00; checks every 15 min.","done","scripts/maintenance/"],
+ ["Vidar Dashboard","Web control panel for TVs, server load and actions.","build","Phase 4"],
+ ["Jellyseerr","Family request page for titles to add.","build","Phase 4"],
+ ["Uptime Kuma","Phone alerts when a TV or service goes down.","build","Phase 5.1"],
+ ["Bazarr","Spanish and English subtitles for your library.","build","Phase 5.3"],
+ ["Tdarr","Re-encodes your files to HEVC to save space and upload.","build","Phase 5.4"],
+ ["Home Assistant","Power, apps and scenes for every TV; voice control.","build","Phase 5.6"],
+ ["Backups","Nightly to the media drive, encrypted copy to Backblaze.","build","Phase 5.2, 5.5"],
+ ["Ollama + Vidar bot","Local AI assistant on Telegram.","build","Phase 6"],
+ ["Windows installer","One PowerShell script installs the whole server.","build","Phase 1.1"]];
+const STATUS={done:"WRITTEN",build:"TO BUILD",you:"YOU",buy:"BUY"};
+const SITES=[
+ ["Apartment",[["APT-LIVING","RockTek G2",1],["APT-BED","Onn 4K Pro",1]]],
+ ["Home",[["HOME-LIVING","RockTek G2",1],["HOME-BED","Onn 4K Pro",1]]],
+ ["Partner",[["PARTNER","Onn 4K Pro",1]]],
+ ["Office",[["OFFICE","Onn 4K Pro",1]]],
+ ["Second home",[["SECOND-HOME","RockTek G2",0]]]];
+const AI_TOOLS=[["fleet_status","Runs the health check and sums it up.","Read only"],["server_status","CPU, RAM, disk, active streams.","Read only"],
+ ["diagnose","Reads logs and history, explains, suggests a fix.","Read only"],["restart_tv","Reboots one box over ADB.","Needs ✅"],
+ ["run_maintenance","Cache trim on one box or all.","Needs ✅"],["daily_summary","9 AM report: fleet, storage, anything broken.","Scheduled"]];
+const ROAD=[
+ ["Week 0","Hardware & accounts",["16 GB RAM, media drive, one test Onn","Domain, Tailscale, NextDNS, Cloudflare, Trakt, Telegram","Measure home upload speed"],0],
+ ["Week 1","Windows server",["One-click PowerShell installer","Jellyfin with AMD transcoding","Status and tunnel scripts for Windows"],35],
+ ["Week 1–2","Network mesh & DNS",["Tailscale on server and all TVs","Access rules: server-only control","NextDNS on every box"],70],
+ ["Week 2","TV provisioning",["provision-tv: apps, DNS, launcher in one command","Free channels, legal Stremio add-ons, Trakt","Maintenance tuned to the Onn's debug mode"],55],
+ ["Week 3–5","Vidar TV app",["Jet Stream fork in Vidar indigo","Jellyfin SDK data, live guide, player","Logo from a file or a link"],25],
+ ["Week 3","Dashboard & requests",["Vidar Dashboard web panel","Jellyfin theme, Jellyseerr"],0],
+ ["Week 3–4","Reliability",["Uptime Kuma alerts, nightly and cloud backups","Bazarr, Tdarr, Home Assistant","Restore drill under one hour"],0],
+ ["Week 4–5","AI assistant",["Ollama with a 3B–7B model","Telegram bot with confirm-to-act","Daily summary and instant alerts"],0],
+ ["Week 6","Polish",["Bilingual printed card per location","v1.0 tag"],0]];
+const CANT=[
+ ["Thunder IPTV reseller lines","Resold pay channels and PPV without a license from the rights holders.","Live sports through services you subscribe to (YouTube TV, DAZN, F1 TV, NBA League Pass, Peacock, ViX), plus free FAST channels."],
+ ["Torrentio + TorBox in Stremio","Streams pirated movies and shows.","Your own Jellyfin library inside Stremio and Vidar TV, plus legal add-ons."],
+ ["Sonarr / Radarr torrent automation","Automates downloading copyrighted media.","Jellyseerr requests and Tdarr for files you already own."],
+ ["Gundam artwork in the shared build","The Vidar design belongs to Sunrise / Bandai, and the fan art to its artists. I won't commit or publish it.","A swappable logo slot: drop your image in locally or paste a link. Your flat logo file is ready for your boxes."],
+ ["Selling the service, hidden memo lines","The original plan resold this and disguised payments. That's out entirely.","A private network for you and your family."],
+ ["Commercial VPN on the TVs","Not a rule thing: Android runs one VPN at a time and it would knock out Tailscale.","Tailscale exit node through your home connection if you need it."]];
+
+/* ---------- static sections ---------- */
+const el=(h)=>{const t=document.createElement('template');t.innerHTML=h.trim();return t.content.firstChild};
+const appCard=a=>el(`<div class="card"><div class="top"><h3>${a[0]}</h3><span class="pill ${a[2]}">${STATUS[a[2]]}</span></div><p>${a[1]}</p><div class="where">${a[3]}</div></div>`);
+APPS_TV.forEach(a=>document.getElementById('apps-tv').append(appCard(a)));
+APPS_SRV.forEach(a=>document.getElementById('apps-srv').append(appCard(a)));
+SITES.forEach(([n,tvs])=>document.getElementById('sites').append(el(`<div class="site"><h3>${n}</h3>${tvs.map(t=>`<div class="tvrow ${t[2]?'':'off'}"><div><b>${t[0]}</b><div class="where">${t[1]}</div></div><span class="s">${t[2]?'online':'offline'}</span></div>`).join('')}</div>`)));
+AI_TOOLS.forEach(t=>document.getElementById('ai-tools').append(el(`<div class="card"><div class="top"><h3 class="mono" style="font-size:15px">${t[0]}</h3><span class="pill ${t[2]==='Read only'?'done':t[2]==='Scheduled'?'buy':'you'}">${t[2].toUpperCase()}</span></div><p>${t[1]}</p></div>`)));
+ROAD.forEach((r,i)=>document.getElementById('road').append(el(`<div class="phase"><div class="wk">Phase ${i}<small>${r[0]}</small></div><div><h3>${r[1]}</h3><ul>${r[2].map(x=>`<li>${x}</li>`).join('')}</ul><div class="prog" aria-label="${r[3]}% written"><i style="width:${r[3]}%"></i></div></div></div>`)));
+CANT.forEach(c=>document.getElementById('cant-list').append(el(`<div class="card nope"><h3>${c[0]}</h3><p>${c[1]}</p><div class="alt"><b>Instead:</b> ${c[2]}</div></div>`)));
+// architecture: five sites
+(function(){const g=document.getElementById('sitesvg');const n=SITES.length,w=160,gap=(960-60-n*w)/(n-1);
+ SITES.forEach(([name,tvs],i)=>{const x=30+i*(w+gap),cx=x+w/2;
+  g.insertAdjacentHTML('beforeend',`<line x1="480" y1="150" x2="${cx}" y2="268" stroke="#5E66BC" stroke-width="2" marker-end="url(#ar)"/>
+  <rect x="${x}" y="272" width="${w}" height="96" rx="12" fill="#15161C" stroke="#2C2F3B"/>
+  <text x="${cx}" y="300" text-anchor="middle" fill="#E4E6EE" font-size="14" font-weight="600">${name}</text>
+  <text x="${cx}" y="324" text-anchor="middle" fill="#AEB3C4" font-size="12">${tvs.length} TV${tvs.length>1?'s':''}</text>
+  <text x="${cx}" y="346" text-anchor="middle" fill="#7A8096" font-size="11">${tvs.map(t=>t[1].split(' ')[0]).join(' · ')}</text>`)});})();
+
+/* ---------- TV demo ---------- */
+const TABS=["Home","Categories","Movies","Shows","Live","Favorites","Apps"];
+const G=["linear-gradient(135deg,#3A4192,#0C0D11)","linear-gradient(135deg,#7A1F70,#1E2029)","linear-gradient(135deg,#B9B08E,#2C2F3B)","linear-gradient(135deg,#262a66,#9AA0F0)","linear-gradient(135deg,#B3261E,#0C0D11)","linear-gradient(135deg,#2C2F3B,#5E66BC)"];
+const CONTENT={
+ Home:{hero:["NEW IN YOUR LIBRARY","Featured Title","Jellyfin · 2h 08m · 4K HDR · Español / English"],rows:[["Continue Watching","3 IN PROGRESS",["Family Movie Night","Series · S2 E4","Documentary","Películas","Live · Pluto TV"],[62,30,85,0,0]]]},
+ Movies:{hero:["4K HDR","Movie Night Pick","Your library · sorted by recently added"],rows:[["Recently Added","",["Action Pick","Comedy Pick","Drama Pick","Family Pick","Classic Pick"],[]]]},
+ Shows:{hero:["NEXT EPISODE","Your Series","Season 2 · Episode 5 · resume at 12:40"],rows:[["Up Next","",["Series A","Series B","Docuseries","Kids Show","Anime"],[40,0,10,0,0]]]},
+ Favorites:{hero:["FAVORITE","Saved for Later","Synced across all 7 TVs with your profile"],rows:[["Your Favorites","5 SAVED",["Favorite 1","Favorite 2","Favorite 3","Favorite 4","Favorite 5"],[]]]}};
+const CATS=["Action","Comedy","Documentaries","Películas en Español","Family","Horror","Sci-Fi","Music"];
+const CH=[["Pluto · News","Morning News","Market Watch","World Report"],["Samsung · Movies","Classic Western","Crime Drama","Late Show"],["Plex · Kids","Cartoon Block","Science Hour","Story Time"],["Pluto · Sports","Highlights","Classic Games","Outdoors"]];
+const APPS=[["Vidar","Library","linear-gradient(135deg,#9AA0F0,#3A4192)"],["Stremio","Legal add-ons","linear-gradient(135deg,#7A1F70,#3A4192)"],["Live TV","Free channels","linear-gradient(135deg,#B9B08E,#5E66BC)"],["Jellyfin","Classic player","linear-gradient(135deg,#5E66BC,#7A1F70)"],["Settings","Network · DNS","linear-gradient(135deg,#2C2F3B,#5E66BC)"]];
+
+let tab=0, zone='tabs', idx=0;
+const tabsEl=document.getElementById('tabs'),scr=document.getElementById('screen'),tv=document.getElementById('tv'),toast=document.getElementById('toast');
+function renderTabs(){tabsEl.innerHTML=`<div class="tv-av"></div>`+TABS.map((t,i)=>`<span class="tv-tab f ${i===tab?'on':''}" data-z="tabs" data-i="${i}">${t}</span>`).join('')+`<span class="tv-brand"><img src="${LOGO}" alt="">VIDAR</span>`}
+function renderScreen(){const t=TABS[tab];let h='';
+ if(CONTENT[t]){const c=CONTENT[t];h+=`<div class="tv-hero"><img src="${LOGO}" alt=""><div class="t"><span class="tv-badge">${c.hero[0]}</span><h4>${c.hero[1]}</h4><p>${c.hero[2]}</p><div class="tv-btns">${["▶ Play","More info","♡ Favorite"].map((b,i)=>`<span class="tv-btn f" data-z="btn" data-i="${i}">${b}</span>`).join('')}</div></div></div>`;
+  const r=c.rows[0];h+=`<div class="tv-row-h">${r[0]}${r[1]?`<i>● ${r[1]}</i>`:''}</div><div class="tv-row">${r[2].map((n,i)=>`<div class="tv-card f" data-z="row" data-i="${i}" style="background:${G[i%G.length]}"><b>${n}</b>${r[3][i]?`<div class="pb" style="width:${r[3][i]}%"></div>`:''}</div>`).join('')}</div>`}
+ else if(t==='Categories'){h=`<div class="tv-grid">${CATS.map((c,i)=>`<div class="tv-cat f" data-z="row" data-i="${i}" style="background:${G[i%G.length]}">${c}</div>`).join('')}</div>`}
+ else if(t==='Live'){h=`<div class="tv-row-h">Live guide <i>● FREE FAST CHANNELS</i></div><div class="tv-guide">${CH.map((c,i)=>`<div class="tv-ch f" data-z="row" data-i="${i}"><em>${String(i+1).padStart(2,'0')}</em>${c[0]}</div><div class="tv-prog"><div class="now" style="flex:2">▶ ${c[1]}</div><div style="flex:1.4">${c[2]}</div><div style="flex:1">${c[3]}</div></div>`).join('')}</div>`}
+ else if(t==='Apps'){h=`<div class="tv-row-h">Apps</div><div class="tv-apps">${APPS.map((a,i)=>`<div class="tv-app f" data-z="row" data-i="${i}"><div class="dot" style="background:${a[2]}"></div>${a[0]}<small>${a[1]}</small></div>`).join('')}</div>`}
+ scr.innerHTML=h;paint()}
+function items(z){return [...tv.querySelectorAll(`.f[data-z="${z}"]`)]}
+function paint(){tv.querySelectorAll('.f').forEach(e=>e.classList.remove('focus'));const it=items(zone);if(it.length){idx=Math.min(idx,it.length-1);it[idx].classList.add('focus')}}
+function zonesFor(){return CONTENT[TABS[tab]]?['tabs','btn','row']:['tabs','row']}
+function say(m){toast.textContent=m;toast.classList.add('show');clearTimeout(say.t);say.t=setTimeout(()=>toast.classList.remove('show'),1400)}
+function key(k){const z=zonesFor(),zi=z.indexOf(zone),it=items(zone);
+ const cols=TABS[tab]==='Categories'?4:1;
+ if(k==='ArrowRight'){if(zone==='tabs'){tab=Math.min(TABS.length-1,tab+1);idx=tab;renderTabs();renderScreen();return}idx=Math.min(it.length-1,idx+(TABS[tab]==='Live'?0:1))}
+ else if(k==='ArrowLeft'){if(zone==='tabs'){tab=Math.max(0,tab-1);idx=tab;renderTabs();renderScreen();return}idx=Math.max(0,idx-(TABS[tab]==='Live'?0:1))}
+ else if(k==='ArrowDown'){if(TABS[tab]==='Categories'&&zone==='row'&&idx+cols<it.length)idx+=cols;else if(TABS[tab]==='Live'&&zone==='row'&&idx<it.length-1)idx++;else if(zi<z.length-1){zone=z[zi+1];idx=0}}
+ else if(k==='ArrowUp'){if(TABS[tab]==='Categories'&&zone==='row'&&idx-cols>=0)idx-=cols;else if(TABS[tab]==='Live'&&zone==='row'&&idx>0)idx--;else if(zi>0){zone=z[zi-1];idx=zone==='tabs'?tab:0}}
+ else if(k==='Enter'){const e=it[idx];if(!e)return;if(zone==='tabs'){zone=z[1];idx=0;paint();return}say((zone==='btn'?'':'Opening ')+e.textContent.trim())}
+ else if(k==='Backspace'){zone='tabs';idx=tab}
+ else if(k==='Home'){tab=0;zone='tabs';idx=0;renderTabs();renderScreen();return}
+ paint()}
+tv.addEventListener('keydown',e=>{if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Enter','Backspace','Home'].includes(e.key)){e.preventDefault();key(e.key)}});
+tv.addEventListener('click',e=>{const f=e.target.closest('.f');tv.focus();if(!f)return;const z=f.dataset.z,i=+f.dataset.i;
+ if(z==='tabs'){tab=i;zone='tabs';idx=i;renderTabs();renderScreen();return}zone=z;idx=i;paint();key('Enter')});
+document.querySelectorAll('[data-k]').forEach(b=>b.addEventListener('click',()=>{key(b.dataset.k);tv.focus()}));
+renderTabs();renderScreen();
+</script>

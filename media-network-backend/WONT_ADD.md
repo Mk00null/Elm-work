@@ -13,6 +13,6 @@ Each item has the closest legal alternative that *is* in the build.
 | 7 | **Hidden payment memos** ("PC Repair", banned words) | Concealing income/what's sold | — |
 | 8 | **"Stealth" to hide streaming from ISPs / rights holders** | Evasion of enforcement | Privacy is in: Tailscale, Cloudflare Access, NextDNS, no open ports |
 | 9 | **Gundam Vidar artwork committed or published** | Sunrise/Bandai design and fan artists' work | Swappable logo slot (file or link); your flat logo lives only on your copies (`site/build.py`, `vidar_logo.png`) |
-| 10 | **Bitdefender (commercial) VPN on the TVs** | Not a rules issue: Android allows one VPN, it would knock Tailscale off | Tailscale exit node; keep Bitdefender on phones/laptops |
+| 10 | **Bitdefender (commercial) VPN on the TVs** | Not a rules issue: Android allows one VPN, it would knock Tailscale off | **Tailscale + Mullvad exit nodes** on every TV (see `VPN.md`); keep Bitdefender on phones/laptops |
 
 Everything else from the plan is built or scheduled — see `VIDAR_PLAN.md`.

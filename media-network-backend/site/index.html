@@ -186,10 +186,14 @@ const APPS_LIST=[
  ["Photos, music, extras",[
   ["Immich","family photos, TV slideshow"],["Navidrome","your music"],["Audiobookshelf","audiobooks, podcasts"],
   ["Kodi","second player"],["Moonlight","stream PC games"],["Home Assistant","power, scenes, doorbell on TV"]]],
+ ["Privacy",[
+  ["Tailscale + Mullvad","every TV's traffic through a no-log VPN; server link stays up","you"],["Access rules","only the server can reach the TVs"],
+  ["Cloudflare login + rate limit","email code before Jellyfin's web page"],["Google TV cleanup","ad tracking and recommendations off"],
+  ["Encrypted backups","encrypted before leaving the house"],["Vaultwarden","your passwords on your server"],["Lockdown button","cut every TV off in one click"]]],
  ["Server",[
   ["Jellyfin","library, AMD transcoding, Intro Skipper, trickplay"],["Vidar Dashboard","fleet status and actions"],["Vidar Assistant","Telegram + local AI"],
   ["Uptime Kuma","phone alerts"],["Jellyseerr","family requests"],["Bazarr · Tdarr","subtitles, smaller files"],
-  ["NextDNS","tracker blocking"],["Backups","nightly + encrypted cloud"],["Maintenance","Tue/Fri 04:00 self-cleaning"]]]];
+  ["NextDNS","trackers, ads, kids profile"],["Backups","nightly + encrypted cloud"],["Maintenance","Tue/Fri 04:00 self-cleaning"],["Updates","What’s Up Docker, Sundays"],["UPS shutdown","clean stop on low battery","you"],["Weekly report","Sunday summary from the bot"]]]];
 const CANT=[
  ["Thunder IPTV lines, PPV bouquets","Antenna locals + free channels; official DAZN / ESPN+ / PPV apps you subscribe to"],
  ["Torrentio + TorBox","Your Jellyfin library in Vidar and Stremio; Kanopy, Hoopla, Tubi for free films"],
@@ -197,7 +201,7 @@ const CANT=[
  ["Reselling, hidden payment memos","A private network for you and family"],
  ["Stealth from ISPs and rights holders","Real privacy: Tailscale, Cloudflare login, NextDNS, no open ports"],
  ["Gundam artwork in the shared build","Swappable logo; your flat logo stays on your own copies"],
- ["Commercial VPN on the TVs","Tailscale exit node (Android allows only one VPN)"]];
+ ["Bitdefender VPN on the TVs","Mullvad exit nodes inside Tailscale (Android runs one VPN; Bitdefender would cut the server link)"]];
 const el=h=>{const t=document.createElement('template');t.innerHTML=h.trim();return t.content.firstChild};
 const L=document.getElementById('apps-list');
 APPS_LIST.forEach(([g,items])=>{L.append(el(`<h3>${g}</h3>`));items.forEach(a=>L.append(el(`<div class="item"><b>${a[0]}</b><span>${a[1]}</span><i class="${a[2]||''}">${a[2]?'BUY':'INCLUDED'}</i></div>`)))});

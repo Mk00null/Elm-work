@@ -50,6 +50,7 @@ th{font:400 12px "JetBrains Mono",monospace;color:var(--ink-3)}
       <label for="tok" style="font-size:13px;color:var(--ink-3)">Password</label>
       <input id="tok" type="password" placeholder="for actions" autocomplete="current-password">
       <button id="refresh">Refresh</button>
+      <button id="lock" class="danger" title="Cut every TV off the private network">Lockdown</button>
     </div>
   </header>
   <div class="stats" id="stats"></div>
@@ -90,6 +91,11 @@ document.addEventListener('click',async e=>{const b=e.target.closest('button[dat
  try{const r=await fetch(`api/devices/${encodeURIComponent(id)}/${a}`,{method:'POST',headers:{'X-Vidar-Token':tok.value}});const j=await r.json();
   toast(r.ok?`${a==='restart'?'Restarting':'Caches cleared on'} ${id}`:(j.detail||'Action failed'))}catch(err){toast('Action failed: server unreachable')}
  b.disabled=false});
+$('#lock').onclick=async()=>{const b=$('#lock'),on=b.dataset.state!=='on';
+ if(b.dataset.ok!=='1'){b.dataset.ok='1';b.textContent=on?'Click again: lock all TVs':'Click again: restore TVs';return}
+ b.dataset.ok='';try{const r=await fetch(`api/lockdown/${on?'on':'off'}`,{method:'POST',headers:{'X-Vidar-Token':tok.value}});const j=await r.json();
+ if(r.ok){b.dataset.state=on?'on':'off';toast(on?`Locked ${j.devices} TVs`:`Restored ${j.devices} TVs`)}else toast(j.detail||'Lockdown failed')}catch(e){toast('Lockdown failed')}
+ b.textContent=b.dataset.state==='on'?'Restore TVs':'Lockdown'};
 $('#refresh').onclick=load;load();setInterval(load,30000);
 </script>
 </body>

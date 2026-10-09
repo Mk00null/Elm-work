@@ -53,3 +53,19 @@ cd inventory
 One Jellyfin user per location (`apartment`, `partner`, …) keeps separate
 watch history / Continue Watching and lets you set per-site bitrate limits
 and parental controls.
+
+## Guest network for the TVs (each location)
+Put the Vidar box on the router's **guest / IoT network** so it can't see phones,
+laptops or cameras at that location. Tailscale still reaches it.
+1. Router admin → Wireless → Guest network: on, WPA2/WPA3, **client isolation / "allow guests to see each other": off for casting, on otherwise**.
+2. Join the TV to that SSID (Settings → Network).
+3. If you use an HDHomeRun at that location, put it on the same guest network.
+
+## Privacy checklist
+- [ ] Tailscale policy from `tailscale/policy.hujson` pasted; TVs tagged `tag:vidar-tv`, server `tag:vidar-server`
+- [ ] Key expiry disabled on each TV
+- [ ] Mullvad exit node chosen on each TV (`VPN.md`)
+- [ ] `scripts/security/cloudflare-access.py --domain …` run (login wall + rate limit)
+- [ ] Two-factor on Cloudflare, Tailscale, NextDNS, Telegram, router admin
+- [ ] `BACKUP_AGE_RECIPIENT` set; private key stored off the server
+- [ ] Passwords in Vaultwarden (`http://<server-tailscale-ip>:8222` via Tailscale Serve or SSH tunnel)

@@ -148,9 +148,16 @@ def main() -> None:
         for uid in ALLOWED:
             await ctx.bot.send_message(uid, "🌅 " + text)
 
+    async def weekly(ctx):
+        text, _ = think("Weekly report: which TVs had problems this week (use diagnose on any that "
+                        "were offline), disk usage, and one suggestion. Keep it short.")
+        for uid in ALLOWED:
+            await ctx.bot.send_message(uid, "📊 " + text)
+
     if app.job_queue:
         import datetime as dt
         app.job_queue.run_daily(daily, time=dt.time(9, 0))
+        app.job_queue.run_daily(weekly, time=dt.time(10, 0), days=(0,))  # Sunday
     logging.basicConfig(level=logging.INFO)
     app.run_polling()
 

@@ -38,7 +38,15 @@ SETTINGS = [  # (namespace, key, value) — safe, reversible tweaks
     ("global", "stay_on_while_plugged_in", "7"),
     ("secure", "screensaver_enabled", "0"),
     ("global", "auto_time", "1"),
+    # privacy: no usage/diagnostic reporting, no ad-ID personalization prompts
+    ("global", "send_action_app_error", "0"),
+    ("secure", "send_action_app_error", "0"),
+    ("global", "dropbox_max_files", "0"),
+    ("secure", "limit_ad_tracking", "1"),
 ]
+# Google TV recommendation/ad surfaces disabled per-user (reversible: pm enable <pkg>)
+DISABLE_PKGS = ["com.google.android.tvrecommendations", "com.google.android.feedback",
+                "com.google.android.leanbacklauncher.recommendations"]
 
 
 class Runner:
@@ -69,6 +77,8 @@ def main() -> int:
                     help="comma list of groups from apps.json (core, free_tv, extras)")
     ap.add_argument("--no-wait", action="store_true",
                     help="don't pause for Play Store installs; just list what's missing")
+    ap.add_argument("--check-vpn", action="store_true",
+                    help="only print the box's public IP and Tailscale exit-node state, then exit")
     ap.add_argument("--dry-run", action="store_true")
     a = ap.parse_args()
 
@@ -84,6 +94,12 @@ def main() -> int:
         if "connected" not in out:
             print(f"error: {out.strip() or 'no answer'} — is network debugging on and the prompt accepted?", file=sys.stderr)
             return 1
+
+    if a.check_vpn:
+        ip = run.adb("shell", "curl", "-s", "https://am.i.mullvad.net/json", check=False) or \
+            run.adb("shell", "wget", "-qO-", "https://am.i.mullvad.net/json", check=False)
+        print("  public IP / VPN:", ip or "(no curl/wget on the box: open am.i.mullvad.net in a browser on the TV)")
+        return 0
 
     print("[2/6] Installing apps")
     catalog = json.loads((HERE / "apps.json").read_text())
@@ -124,9 +140,15 @@ def main() -> int:
     else:
         print("  (NEXTDNS_PROFILE_ID not set — skipping)")
 
-    print("[4/6] Quieting the box")
+    print("[4/6] Quieting the box + privacy")
     for ns, key, val in SETTINGS:
         run.adb("shell", "settings", "put", ns, key, val, check=False)
+    for pkg in DISABLE_PKGS:
+        run.adb("shell", "pm", "disable-user", "--user", "0", pkg, check=False)
+    # Google's own toggle for ad personalization can only be flipped by hand:
+    run.adb("shell", "am", "start", "-a", "com.google.android.gms.settings.ADS_PRIVACY", check=False)
+    print("  → on the TV: turn on 'Opt out of Ads Personalization' / 'Delete advertising ID'")
+    print("  → then in Tailscale: Exit node → Mullvad city, Allow LAN access (see VPN.md)")
 
     print("[5/6] Home app")
     for comp in HOME_APPS:

@@ -9,6 +9,7 @@
 #                .mobileconfig, DoH/DoT URLs) into ./out/
 #
 # Env:  NEXTDNS_PROFILE_ID (required)  NEXTDNS_API_KEY (api-push only;
+#       NEXTDNS_KIDS=1 adds parental controls — use a second profile for kids TVs;
 #       from https://my.nextdns.io/account)
 # Example:  NEXTDNS_PROFILE_ID=abc123 NEXTDNS_API_KEY=xxx ./configure-nextdns.sh api-push
 #
@@ -47,6 +48,17 @@ cmd_api_push() {
   for n in "${NATIVE[@]}";     do api POST /privacy/natives    "{\"id\":\"$n\"}" && log INFO "native tracker block +$n"; done
   api PATCH /privacy  '{"disguisedTrackers":true,"allowAffiliate":false}'
   api PATCH /security '{"threatIntelligenceFeeds":true,"cryptojacking":true,"dnsRebinding":true,"typosquatting":true,"dga":true,"nrd":false}'
+  # Google TV / Android ad + telemetry endpoints
+  for d in ads.google.com googleads.g.doubleclick.net pagead2.googlesyndication.com \
+           app-measurement.com firebase-settings.crashlytics.com tvrecommendations-pa.googleapis.com; do
+    api POST /denylist "{\"id\":\"$d\",\"active\":true}" && log INFO "deny $d"
+  done
+  if [[ "${NEXTDNS_KIDS:-0}" == 1 ]]; then   # use a separate profile ID for the kids TV
+    api PATCH /parentalControl '{"safeSearch":true,"youtubeRestrictedMode":true,"blockBypass":true}'
+    for c in porn gambling dating piracy social-networks; do
+      api POST /parentalControl/categories "{\"id\":\"$c\",\"active\":true}" && log INFO "kids block $c"
+    done
+  fi
   api PATCH /settings '{"logs":{"enabled":true,"retention":604800},"performance":{"ecs":true,"cacheBoost":true}}'
   log INFO "Profile updated."
 }

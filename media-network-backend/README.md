@@ -6,7 +6,7 @@ home server (HP OmniDesk, Windows 11).
 | Folder | What |
 |---|---|
 | `windows/` | **Start here on the server**: `install-server.ps1`, `check-services.ps1`, `setup-tunnels.ps1` |
-| `docker-compose.yml` | RustDesk (always) + `--profile apps`: Uptime Kuma, Jellyseerr, Bazarr, Tdarr, Home Assistant, dashboard; `--profile media`: Immich, Navidrome, Audiobookshelf; `--profile ai`: Ollama (Linux) |
+| `docker-compose.yml` | RustDesk (always) + `--profile apps`: Uptime Kuma, Jellyseerr, Bazarr, Tdarr, Home Assistant, dashboard, Vaultwarden, What's Up Docker; `--profile media`: Immich, Navidrome, Audiobookshelf; `--profile ai`: Ollama (Linux) |
 | `scripts/provision/provision-tv.py` + `apps.json` | One command to set up a new TV box (core, free TV, extras) |
 | `scripts/jellyfin/setup-jellyfin.py` | Live TV (antenna + Pluto/Samsung/Plex), Intro Skipper, Playback Reporting, Box Sets, trickplay |
 | `scripts/maintenance/` | Tue/Fri cache trim + reboot, 15-min health checks |
@@ -17,6 +17,8 @@ home server (HP OmniDesk, Windows 11).
 | `bot/` | Vidar Assistant Telegram bot (Ollama) |
 | `vidar-tv/` | Vidar TV Android app (Jet Stream fork, Jellyfin-backed) |
 | `site/` | Project site with a live TV UI demo |
+| `VPN.md`, `tailscale/policy.hujson` | VPN on the TVs (Tailscale + Mullvad) and access rules |
+| `scripts/security/cloudflare-access.py` | Login wall + rate limit on jelly.<domain> |
 | `VIDAR_PLAN.md`, `MULTI_SITE.md`, `PROVISIONING_RUNBOOK.md`, `WONT_ADD.md` | Plan, multi-site guide, workbench steps, out-of-scope list |
 
 ## Bring-up order

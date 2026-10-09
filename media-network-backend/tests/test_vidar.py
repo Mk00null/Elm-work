@@ -90,6 +90,30 @@ class ProvisionDryRunTest(unittest.TestCase):
         self.assertIn("set-home-activity", r.stdout)
 
 
+class SecurityTest(unittest.TestCase):
+    def test_lockdown_needs_key(self):
+        try:
+            app = load("dash2", "dashboard/app.py")
+        except ImportError:
+            self.skipTest("fastapi not installed")
+        app.TS_KEY = ""
+        with self.assertRaises(app.HTTPException):
+            app.api_lockdown("on")
+
+    def test_cloudflare_dry_run(self):
+        r = subprocess.run([sys.executable, str(ROOT / "scripts/security/cloudflare-access.py"),
+                            "--domain", "example.com", "--dry-run"], capture_output=True, text=True,
+                           env={"ACCESS_ALLOWED_EMAILS": "a@b.c", "PATH": "/usr/bin:/bin"})
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("jelly.example.com", r.stdout)
+
+    def test_backup_runs(self):
+        tmp = Path(tempfile.mkdtemp())
+        r = subprocess.run([sys.executable, str(ROOT / "scripts/backup/vidar_backup.py")], capture_output=True,
+                           text=True, env={"BACKUP_DIR": str(tmp), "PATH": "/usr/bin:/bin"})
+        self.assertEqual(r.returncode, 0, r.stderr)
+
+
 class CatalogTest(unittest.TestCase):
     def test_apps_json(self):
         cat = json.loads((ROOT / "scripts/provision/apps.json").read_text())

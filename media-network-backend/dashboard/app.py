@@ -27,6 +27,8 @@ HEALTH_LOG = Path(os.environ.get("VIDAR_HEALTH_LOG", ROOT / "scripts/maintenance
 JELLYFIN_URL = os.environ.get("JELLYFIN_URL", "http://localhost:8096").rstrip("/")
 JELLYFIN_KEY = os.environ.get("JELLYFIN_API_KEY", "")
 TOKEN = os.environ.get("DASHBOARD_TOKEN", "")
+TS_KEY = os.environ.get("TAILSCALE_API_KEY", "")
+TS_TAILNET = os.environ.get("TAILSCALE_TAILNET", "-")
 
 app = FastAPI(title="Vidar Dashboard")
 
@@ -133,6 +135,29 @@ def api_action(device_id: str, action: str):
     if r.returncode != 0:
         raise HTTPException(502, f"adb failed: {r.stderr.strip() or r.stdout.strip()}")
     return {"ok": True, "device": device_id, "action": action}
+
+
+def tailscale(method: str, path: str, body: dict | None = None):
+    if not TS_KEY:
+        raise HTTPException(503, "Set TAILSCALE_API_KEY to use lockdown")
+    req = urllib.request.Request(f"https://api.tailscale.com/api/v2{path}", method=method,
+                                 data=json.dumps(body).encode() if body is not None else None,
+                                 headers={"Authorization": f"Bearer {TS_KEY}", "Content-Type": "application/json"})
+    with urllib.request.urlopen(req, timeout=15) as r:
+        raw = r.read()
+    return json.loads(raw) if raw else {}
+
+
+@app.post("/api/lockdown/{state}", dependencies=[Depends(require_token)])
+def api_lockdown(state: str):
+    """'on' de-authorizes every tag:vidar-tv device (no remote access to or from TVs); 'off' restores."""
+    if state not in ("on", "off"):
+        raise HTTPException(404, "Use on or off")
+    devices_ = tailscale("GET", f"/tailnet/{TS_TAILNET}/devices").get("devices", [])
+    tvs = [d for d in devices_ if "tag:vidar-tv" in (d.get("tags") or [])]
+    for d in tvs:
+        tailscale("POST", f"/device/{d['id']}/authorized", {"authorized": state == "off"})
+    return {"ok": True, "lockdown": state, "devices": len(tvs)}
 
 
 @app.get("/")

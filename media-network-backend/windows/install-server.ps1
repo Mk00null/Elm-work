@@ -49,6 +49,7 @@ $apps = [ordered]@{
   "Python.Python.3.12"     = "Python for scripts, dashboard and bot"
   "Ollama.Ollama"          = "Local AI models"
   "Git.Git"                = "Git (also provides bash for the .sh scripts)"
+  "FiloSottile.age"        = "age, encrypts backups"
 }
 foreach ($id in $apps.Keys) {
   $installed = winget list --id $id -e 2>$null | Select-String $id
@@ -102,7 +103,7 @@ docker info *> $null
 if ($LASTEXITCODE -ne 0) { Warn "Docker isn't running yet (first install may need a reboot). Re-run this script after rebooting." }
 elseif (Ask "Start Vidar containers now?") {
   Push-Location $Root
-  docker compose --profile apps --profile media up -d hbbs hbbr uptime-kuma jellyseerr bazarr tdarr homeassistant dashboard navidrome audiobookshelf immich-server immich-machine-learning immich-redis immich-db
+  docker compose --profile apps --profile media up -d hbbs hbbr uptime-kuma jellyseerr bazarr tdarr homeassistant dashboard vaultwarden wud navidrome audiobookshelf immich-server immich-machine-learning immich-redis immich-db
   Pop-Location
   Ok "Containers started"
 }
@@ -129,6 +130,8 @@ if (Ask "Register maintenance (Tue/Fri 04:00), health checks (15 min), nightly b
   & $mk "Health" $py "`"$Root\scripts\maintenance\fleet_health.py`" --quiet" $t
   & $mk "Backup" $py "`"$Root\scripts\backup\vidar_backup.py`"" (New-ScheduledTaskTrigger -Daily -At 3:00AM)
   & $mk "Bot" $py "`"$Root\bot\vidar_bot.py`"" (New-ScheduledTaskTrigger -AtLogOn)
+  $u = New-ScheduledTaskTrigger -Once -At (Get-Date).Date -RepetitionInterval (New-TimeSpan -Minutes 2)
+  & $mk "UPS" "powershell.exe" "-NoProfile -ExecutionPolicy Bypass -File `"$Root\windows\ups-shutdown.ps1`"" $u
 }
 
 Step "Jellyfin extras (live TV, plugins, trickplay)"

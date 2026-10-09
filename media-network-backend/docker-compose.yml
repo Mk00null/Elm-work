@@ -177,6 +177,8 @@ services:
       JELLYFIN_URL: "${JELLYFIN_URL:-http://host.docker.internal:8096}"
       JELLYFIN_API_KEY: "${JELLYFIN_API_KEY:-}"
       DASHBOARD_TOKEN: "${DASHBOARD_TOKEN:-}"
+      TAILSCALE_API_KEY: "${TAILSCALE_API_KEY:-}"
+      TAILSCALE_TAILNET: "${TAILSCALE_TAILNET:--}"
     extra_hosts: ["host.docker.internal:host-gateway"]
     volumes:
       - ./inventory:/data/inventory
@@ -191,6 +193,35 @@ services:
     profiles: [ai]
     ports: ["127.0.0.1:11434:11434"]
     volumes: ["./data/ollama:/root/.ollama"]
+    restart: unless-stopped
+    logging: *default-logging
+    networks: [backend]
+
+  vaultwarden:            # self-hosted Bitwarden for RustDesk/router/Jellyfin passwords (open via Tailscale only)
+    image: vaultwarden/server:latest
+    container_name: vaultwarden
+    profiles: [apps]
+    ports: ["127.0.0.1:8222:80"]
+    environment:
+      SIGNUPS_ALLOWED: "false"
+      ADMIN_TOKEN: "${VAULTWARDEN_ADMIN_TOKEN:-}"
+      DOMAIN: "${VAULTWARDEN_DOMAIN:-http://localhost:8222}"
+    volumes: ["./data/vaultwarden:/data"]
+    restart: unless-stopped
+    logging: *default-logging
+    networks: [backend]
+
+  wud:                    # What's Up Docker: update notices (and Sunday auto-update for safe images)
+    image: getwud/wud:latest
+    container_name: wud
+    profiles: [apps]
+    ports: ["127.0.0.1:3010:3000"]
+    environment:
+      WUD_WATCHER_LOCAL_CRON: "0 4 * * 0"
+      WUD_TRIGGER_DOCKER_LOCAL_PRUNE: "true"
+      WUD_TRIGGER_TELEGRAM_BOT_TOKEN: "${TELEGRAM_BOT_TOKEN:-}"
+      WUD_TRIGGER_TELEGRAM_BOT_CHATID: "${TELEGRAM_ALLOWED_IDS:-}"
+    volumes: ["/var/run/docker.sock:/var/run/docker.sock"]
     restart: unless-stopped
     logging: *default-logging
     networks: [backend]

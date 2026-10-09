@@ -5,6 +5,7 @@
   * Live TV: free FAST channel lineups (Pluto TV, Samsung TV Plus, Plex) + guides
   * Plugins: Intro Skipper, Playback Reporting, TMDb Box Sets
   * Trickplay (scrub preview thumbnails) on every library
+  * Optional kids profile (--kids NAME): max rating PG / TV-PG, no Live TV deletion, no downloads
 
 Needs an API key (Jellyfin Dashboard > API Keys) in JELLYFIN_API_KEY or --api-key.
 Safe to re-run: existing tuners/guides/plugins are skipped.
@@ -55,6 +56,8 @@ def main() -> int:
     ap.add_argument("--hdhomerun", help="'auto' to discover, or the tuner's IP; omit to skip")
     ap.add_argument("--fast", default="us", help="FAST region code (us, mx, ca, gb…) or 'none'")
     ap.add_argument("--no-plugins", action="store_true")
+    ap.add_argument("--kids", metavar="NAME", help="create a kids user with a rating limit")
+    ap.add_argument("--kids-max-rating", type=int, default=10, help="Jellyfin parental value (10 ≈ PG / TV-PG)")
     ap.add_argument("--dry-run", action="store_true")
     a = ap.parse_args()
     if not a.api_key:
@@ -127,6 +130,20 @@ def main() -> int:
             print(f"  + {lib['Name']}")
         else:
             print(f"  ✓ {lib['Name']}")
+    if a.kids:
+        print("Kids profile")
+        users = jf.call("GET", "/Users") or []
+        kid = next((u for u in users if u["Name"].lower() == a.kids.lower()), None)
+        if not kid:
+            kid = jf.call("POST", "/Users/New", {"Name": a.kids, "Password": ""}) or {"Id": "NEW", "Policy": {}}
+            print(f"  + user {a.kids} (no password; set one in Dashboard → Users if wanted)")
+        policy = kid.get("Policy") or {}
+        policy.update({"MaxParentalRating": a.kids_max_rating, "BlockUnratedItems": ["Movie", "Series", "LiveTvChannel"],
+                       "EnableContentDeletion": False, "EnableContentDownloading": False,
+                       "EnableLiveTvManagement": False, "IsAdministrator": False,
+                       "EnableRemoteControlOfOtherUsers": False})
+        jf.call("POST", f"/Users/{kid['Id']}/Policy", policy)
+        print(f"  ✓ rating limit {a.kids_max_rating}, unrated content hidden")
     print("Done. Restart Jellyfin if plugins were added.")
     return 0
 

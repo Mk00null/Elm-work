@@ -4,7 +4,8 @@
 Archives: .env, inventory/fleet.db, RustDesk keys, and the data/ folders of
 Uptime Kuma, Jellyseerr, Bazarr and Home Assistant, plus Jellyfin's config
 (Windows: %ProgramData%\\Jellyfin\\Server\\config and \\data, without caches).
-Keeps BACKUP_KEEP_DAYS days locally; copies to RCLONE_REMOTE if set.
+Encrypts with `age` when BACKUP_AGE_RECIPIENT is set (recommended), so nothing
+leaves the house readable. Keeps BACKUP_KEEP_DAYS days; copies to RCLONE_REMOTE.
 """
 from __future__ import annotations
 
@@ -59,10 +60,25 @@ def main() -> int:
         for p in srcs:
             tar.add(p, arcname=str(p.relative_to(ROOT)) if p.is_relative_to(ROOT) else f"external/{p.name}",
                     filter=lambda ti: None if any(s in ti.name.lower() for s in SKIP) else ti)
+    recipient = os.environ.get("BACKUP_AGE_RECIPIENT")
+    if recipient:
+        if not shutil.which("age"):
+            print("BACKUP_AGE_RECIPIENT set but `age` isn't installed (winget install FiloSottile.age)", file=sys.stderr)
+            out.unlink()
+            return 1
+        enc = out.with_suffix(out.suffix + ".age")
+        r = subprocess.run(["age", "-r", recipient, "-o", str(enc), str(out)], capture_output=True, text=True)
+        out.unlink()
+        if r.returncode:
+            print("encryption failed:", r.stderr.strip(), file=sys.stderr)
+            return 1
+        out = enc
+    elif os.environ.get("RCLONE_REMOTE"):
+        print("warning: uploading an unencrypted backup; set BACKUP_AGE_RECIPIENT", file=sys.stderr)
     print(f"wrote {out} ({out.stat().st_size / 1e6:.1f} MB) from {len(srcs)} sources")
 
     cutoff = time.time() - keep * 86400
-    for old in dest.glob("vidar-*.tar.gz"):
+    for old in list(dest.glob("vidar-*.tar.gz")) + list(dest.glob("vidar-*.tar.gz.age")):
         if old.stat().st_mtime < cutoff:
             old.unlink()
             print(f"pruned {old.name}")

@@ -52,6 +52,9 @@ Legend: ✅ done · 🔨 to build · 🛒 to buy · 👤 you do it
 | 3.5 | Maintenance: adapt to debugging mode found in 0.3 (reboot vs no-reboot variant) | 🔨 |
 | 3.6 | Windows Task Scheduler for Tue/Fri 04:00 + 15-min health checks | ✅ draft · 🔨 finalize |
 
+| 3.7 | **Projectivy Launcher** pushed by `provision-tv.py`: ad-free Vidar home screen (Jellyfin · Stremio · TiviMate · Live), set as default launcher, Vidar wallpaper | 🔨 |
+| 3.8 | **Bilingual ES/EN**: per-location TV system language, Jellyfin profile language + Spanish audio/subtitle preference | 🔨 |
+
 **Exit:** a new box goes from unboxed to ready in ~15 min with one command.
 
 ## Phase 4 — Vidar Dashboard UI (week 3)
@@ -75,7 +78,9 @@ Also: 🔨 Jellyfin custom CSS "Vidar" theme + per-location profiles; 🔨 Jelly
 | 5.2 | Nightly backup: Jellyfin config, `fleet.db`, RustDesk keys, `.env` → media drive + optional cloud (rclone) with 14-day retention |
 | 5.3 | Bazarr: auto subtitles (ES/EN) for your own library |
 | 5.4 | Tdarr: re-encode own library to HEVC to save space/upload |
-| 5.5 | Restore drill doc: rebuild server from backup in < 1 h |
+| 5.5 | **Cloud backup** (Backblaze B2 via rclone, ~$1/mo, encrypted): Jellyfin config, `fleet.db`, RustDesk keys — not media |
+| 5.6 | **Home Assistant** (Docker): Android TV integration for all 7 boxes — power on/off, launch apps, "Movie night" scenes, voice via Google/Alexa, dashboard tile in Vidar UI |
+| 5.7 | Restore drill doc: rebuild server from backup in < 1 h |
 
 ## Phase 6 — Vidar AI Assistant (week 4–5)
 Local LLM via **Ollama** on the server (Llama 3.2 3B for speed, Qwen 2.5 7B for quality; ~5 GB RAM — needs the 16 GB upgrade).
@@ -96,7 +101,8 @@ Scheduled: 🌅 daily 9 AM summary · 🚨 instant alert + AI diagnosis when a T
 Guardrails: allowlist of your Telegram user ID only; every write action needs a ✅ tap; all actions logged.
 
 ## Phase 7 — Polish & handoff (week 6)
-- One-page "how to use your Vidar TV" card per location (printable, ES/EN)
+- One-page "how to use your Vidar TV" card per location (printable, **Spanish + English**)
+- Bilingual Vidar Dashboard and Telegram bot (replies in the language you write in)
 - Remote-friendly: grandma-proof home screen layout on each TV
 - `README.md` index of everything; version tag `v1.0`
 
@@ -120,6 +126,7 @@ Guardrails: allowlist of your Telegram user ID only; every write action needs a 
 | 4–8 TB drive | $90–150 |
 | 7 × Onn 4K Pro (or mix with G2s) | ~$420 |
 | Domain | ~$10/yr |
+| Backblaze B2 backup | ~$1/mo |
 | Software | $0 (all free tiers / open source) |
 
 ## Risks & mitigations

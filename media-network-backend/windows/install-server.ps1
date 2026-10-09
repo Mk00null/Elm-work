@@ -102,7 +102,7 @@ docker info *> $null
 if ($LASTEXITCODE -ne 0) { Warn "Docker isn't running yet (first install may need a reboot). Re-run this script after rebooting." }
 elseif (Ask "Start Vidar containers now?") {
   Push-Location $Root
-  docker compose --profile apps up -d hbbs hbbr uptime-kuma jellyseerr bazarr tdarr homeassistant dashboard
+  docker compose --profile apps --profile media up -d hbbs hbbr uptime-kuma jellyseerr bazarr tdarr homeassistant dashboard navidrome audiobookshelf immich-server immich-machine-learning immich-redis immich-db
   Pop-Location
   Ok "Containers started"
 }
@@ -129,6 +129,15 @@ if (Ask "Register maintenance (Tue/Fri 04:00), health checks (15 min), nightly b
   & $mk "Health" $py "`"$Root\scripts\maintenance\fleet_health.py`" --quiet" $t
   & $mk "Backup" $py "`"$Root\scripts\backup\vidar_backup.py`"" (New-ScheduledTaskTrigger -Daily -At 3:00AM)
   & $mk "Bot" $py "`"$Root\bot\vidar_bot.py`"" (New-ScheduledTaskTrigger -AtLogOn)
+}
+
+Step "Jellyfin extras (live TV, plugins, trickplay)"
+Write-Host "  Needs Jellyfin set up first and an API key (Dashboard > API Keys) in .env as JELLYFIN_API_KEY."
+if (Ask "Run Jellyfin setup now (free channels; add an antenna tuner if you have one)?") {
+  $hd = Read-Host "HDHomeRun IP, 'auto' to search, or Enter to skip"
+  $args2 = @("$Root\scripts\jellyfin\setup-jellyfin.py")
+  if ($hd) { $args2 += @("--hdhomerun", $hd) }
+  & $py @args2
 }
 
 Step "Done"

@@ -3,8 +3,8 @@
 
 Steps (each logged; --dry-run prints the adb commands without running them):
   1. adb connect to the box
-  2. install every APK in scripts/provision/apks/ (Vidar TV, RustDesk, Tailscale,
-     Jellyfin, TiviMate, Stremio, Projectivy — download them yourself, see apks/README.md)
+  2. apps from apps.json: sideload APKs found in scripts/provision/apks/, and for
+     Play-only apps open their Play Store page on the TV (choose groups with --apps)
   3. NextDNS Private DNS (if NEXTDNS_PROFILE_ID is set)
   4. quiet the box: no screensaver ads, faster animations, stay awake on power
   5. set Vidar TV (or Projectivy) as the home app
@@ -16,6 +16,7 @@ Example:
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import shutil
 import subprocess
@@ -64,6 +65,10 @@ def main() -> int:
                     choices=["apartment", "home", "partner", "office", "second-home"])
     ap.add_argument("--mac")
     ap.add_argument("--rustdesk-id")
+    ap.add_argument("--apps", default="core,free_tv,extras",
+                    help="comma list of groups from apps.json (core, free_tv, extras)")
+    ap.add_argument("--no-wait", action="store_true",
+                    help="don't pause for Play Store installs; just list what's missing")
     ap.add_argument("--dry-run", action="store_true")
     a = ap.parse_args()
 
@@ -81,14 +86,35 @@ def main() -> int:
             return 1
 
     print("[2/6] Installing apps")
-    apks = sorted(APK_DIR.glob("*.apk"))
-    if not apks:
-        print("  (no APKs in scripts/provision/apks — skipping; see apks/README.md)")
-    for apk in apks:
-        try:
-            run.adb("install", "-r", "-g", str(apk))
-        except RuntimeError as e:
-            print(f"  ! {apk.name}: {e}")
+    catalog = json.loads((HERE / "apps.json").read_text())
+    wanted = [app for g in a.apps.split(",") for app in catalog.get(g.strip(), [])]
+    installed = "" if a.dry_run else run.adb("shell", "pm", "list", "packages", check=False)
+    missing_play = []
+    for app in wanted:
+        if f"package:{app['package']}" in installed.split():
+            print(f"  ✓ {app['name']}")
+            continue
+        apk = APK_DIR / app.get("apk", "")
+        if app["source"] == "apk" and apk.is_file():
+            try:
+                run.adb("install", "-r", "-g", str(apk))
+                print(f"  + {app['name']} (sideloaded)")
+            except RuntimeError as e:
+                print(f"  ! {app['name']}: {e}")
+        elif app["source"] == "apk":
+            print(f"  ! {app['name']}: put {app['apk']} in scripts/provision/apks/")
+        else:
+            missing_play.append(app)
+    for app in missing_play:
+        run.adb("shell", "am", "start", "-a", "android.intent.action.VIEW",
+                "-d", f"market://details?id={app['package']}", check=False)
+        if a.no_wait or a.dry_run:
+            print(f"  → {app['name']}: opened in Play Store")
+        else:
+            input(f"  → {app['name']}: press Install on the TV, then Enter here… ")
+    for extra in sorted(APK_DIR.glob("*.apk")):   # any other APKs you dropped in
+        if extra.name not in {app.get("apk") for app in wanted}:
+            run.adb("install", "-r", "-g", str(extra), check=False)
 
     print("[3/6] Private DNS")
     prof = os.environ.get("NEXTDNS_PROFILE_ID")

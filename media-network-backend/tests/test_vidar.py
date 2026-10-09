@@ -90,5 +90,23 @@ class ProvisionDryRunTest(unittest.TestCase):
         self.assertIn("set-home-activity", r.stdout)
 
 
+class CatalogTest(unittest.TestCase):
+    def test_apps_json(self):
+        cat = json.loads((ROOT / "scripts/provision/apps.json").read_text())
+        pkgs = [a["package"] for g in ("core", "free_tv", "extras") for a in cat[g]]
+        self.assertEqual(len(pkgs), len(set(pkgs)), "duplicate package ids")
+        for g in ("core", "free_tv", "extras"):
+            for a in cat[g]:
+                self.assertIn(a["source"], {"apk", "play"})
+                if a["source"] == "apk":
+                    self.assertTrue(a.get("apk"))
+
+    def test_jellyfin_setup_needs_key(self):
+        r = subprocess.run([sys.executable, str(ROOT / "scripts/jellyfin/setup-jellyfin.py"), "--api-key", ""],
+                           capture_output=True, text=True)
+        self.assertEqual(r.returncode, 1)
+        self.assertIn("JELLYFIN_API_KEY", r.stderr)
+
+
 if __name__ == "__main__":
     unittest.main()

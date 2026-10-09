@@ -23,14 +23,14 @@ Write-Host "== Containers" -ForegroundColor Cyan
 docker info *> $null
 if ($LASTEXITCODE -ne 0) { Row "Docker" "FAIL" "daemon not reachable" }
 else {
-  foreach ($c in "hbbs","hbbr","uptime-kuma","jellyseerr","bazarr","tdarr","homeassistant","vidar-dashboard") {
+  foreach ($c in "hbbs","hbbr","uptime-kuma","jellyseerr","bazarr","tdarr","homeassistant","vidar-dashboard","navidrome","audiobookshelf","immich-server") {
     $st = docker inspect -f "{{.State.Status}}" $c 2>$null
     if (-not $st) { Row $c "WARN" "not created" } elseif ($st -eq "running") { Row $c "OK" "running" } else { Row $c "FAIL" $st }
   }
 }
 
 Write-Host "== Ports" -ForegroundColor Cyan
-foreach ($p in @(@(8096,"Jellyfin"),@(21116,"RustDesk ID"),@(21117,"RustDesk relay"),@(3001,"Uptime Kuma"),@(5055,"Jellyseerr"),@(8123,"Home Assistant"),@(8080,"Vidar dashboard"),@(11434,"Ollama"))) {
+foreach ($p in @(@(8096,"Jellyfin"),@(21116,"RustDesk ID"),@(21117,"RustDesk relay"),@(3001,"Uptime Kuma"),@(5055,"Jellyseerr"),@(8123,"Home Assistant"),@(8080,"Vidar dashboard"),@(11434,"Ollama"),@(4533,"Navidrome"),@(13378,"Audiobookshelf"),@(2283,"Immich"))) {
   $open = Test-NetConnection -ComputerName 127.0.0.1 -Port $p[0] -InformationLevel Quiet -WarningAction SilentlyContinue
   if ($open) { Row "$($p[0]) $($p[1])" "OK" "listening" } else { Row "$($p[0]) $($p[1])" "FAIL" "closed" }
 }

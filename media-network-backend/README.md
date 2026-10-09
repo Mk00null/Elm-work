@@ -6,8 +6,9 @@ home server (HP OmniDesk, Windows 11).
 | Folder | What |
 |---|---|
 | `windows/` | **Start here on the server**: `install-server.ps1`, `check-services.ps1`, `setup-tunnels.ps1` |
-| `docker-compose.yml` | RustDesk (always) + `--profile apps`: Uptime Kuma, Jellyseerr, Bazarr, Tdarr, Home Assistant, dashboard; `--profile ai`: Ollama (Linux) |
-| `scripts/provision/provision-tv.py` | One command to set up a new TV box |
+| `docker-compose.yml` | RustDesk (always) + `--profile apps`: Uptime Kuma, Jellyseerr, Bazarr, Tdarr, Home Assistant, dashboard; `--profile media`: Immich, Navidrome, Audiobookshelf; `--profile ai`: Ollama (Linux) |
+| `scripts/provision/provision-tv.py` + `apps.json` | One command to set up a new TV box (core, free TV, extras) |
+| `scripts/jellyfin/setup-jellyfin.py` | Live TV (antenna + Pluto/Samsung/Plex), Intro Skipper, Playback Reporting, Box Sets, trickplay |
 | `scripts/maintenance/` | Tue/Fri cache trim + reboot, 15-min health checks |
 | `scripts/network/` | NextDNS profile + device config |
 | `scripts/backup/` | Nightly config backup (+ optional encrypted cloud copy) |

@@ -93,6 +93,108 @@ services:
     logging: *default-logging
     networks: [backend]
 
+  # ===========================================================================
+  # Optional apps — start with:  docker compose --profile apps up -d
+  # ===========================================================================
+  uptime-kuma:            # phone alerts when a TV or service goes down
+    image: louislam/uptime-kuma:1
+    container_name: uptime-kuma
+    profiles: [apps]
+    ports: ["${BIND_IP:-0.0.0.0}:3001:3001"]
+    volumes: ["./data/uptime-kuma:/app/data"]
+    restart: unless-stopped
+    logging: *default-logging
+    networks: [backend]
+
+  jellyseerr:             # family request page for titles to add
+    image: fallenbagel/jellyseerr:latest
+    container_name: jellyseerr
+    profiles: [apps]
+    ports: ["${BIND_IP:-0.0.0.0}:5055:5055"]
+    environment: { TZ: "${TZ:-UTC}", LOG_LEVEL: info }
+    volumes: ["./data/jellyseerr:/app/config"]
+    restart: unless-stopped
+    logging: *default-logging
+    networks: [backend]
+
+  bazarr:                 # Spanish / English subtitles for your library
+    image: lscr.io/linuxserver/bazarr:latest
+    container_name: bazarr
+    profiles: [apps]
+    ports: ["${BIND_IP:-0.0.0.0}:6767:6767"]
+    environment: { TZ: "${TZ:-UTC}", PUID: "${PUID:-1000}", PGID: "${PGID:-1000}" }
+    volumes:
+      - ./data/bazarr:/config
+      - ${MEDIA_PATH:-./data/media}:/media
+    restart: unless-stopped
+    logging: *default-logging
+    networks: [backend]
+
+  tdarr:                  # re-encode your own files to HEVC to save space/upload
+    image: ghcr.io/haveagitgat/tdarr:latest
+    container_name: tdarr
+    profiles: [apps]
+    ports: ["${BIND_IP:-0.0.0.0}:8265:8265", "${BIND_IP:-0.0.0.0}:8266:8266"]
+    environment:
+      TZ: "${TZ:-UTC}"
+      PUID: "${PUID:-1000}"
+      PGID: "${PGID:-1000}"
+      serverIP: 0.0.0.0
+      serverPort: "8266"
+      webUIPort: "8265"
+      internalNode: "true"
+      nodeName: vidar-node
+    volumes:
+      - ./data/tdarr/server:/app/server
+      - ./data/tdarr/configs:/app/configs
+      - ./data/tdarr/logs:/app/logs
+      - ./data/tdarr/cache:/temp
+      - ${MEDIA_PATH:-./data/media}:/media
+    restart: unless-stopped
+    logging: *default-logging
+    networks: [backend]
+
+  homeassistant:          # power, apps and scenes for every TV; voice control
+    image: ghcr.io/home-assistant/home-assistant:stable
+    container_name: homeassistant
+    profiles: [apps]
+    ports: ["${BIND_IP:-0.0.0.0}:8123:8123"]
+    environment: { TZ: "${TZ:-UTC}" }
+    volumes: ["./data/homeassistant:/config"]
+    restart: unless-stopped
+    logging: *default-logging
+    networks: [backend]
+
+  dashboard:              # Vidar control panel (dashboard/)
+    build: ./dashboard
+    container_name: vidar-dashboard
+    profiles: [apps]
+    ports: ["${BIND_IP:-0.0.0.0}:8080:8080"]
+    environment:
+      VIDAR_DB: /data/inventory/fleet.db
+      VIDAR_HEALTH_LOG: /data/maintenance/fleet_health.log
+      VIDAR_DEVICES_CONF: /data/maintenance/devices.conf
+      JELLYFIN_URL: "${JELLYFIN_URL:-http://host.docker.internal:8096}"
+      JELLYFIN_API_KEY: "${JELLYFIN_API_KEY:-}"
+      DASHBOARD_TOKEN: "${DASHBOARD_TOKEN:-}"
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    volumes:
+      - ./inventory:/data/inventory
+      - ./scripts/maintenance:/data/maintenance
+    restart: unless-stopped
+    logging: *default-logging
+    networks: [backend]
+
+  ollama:                 # Linux servers only; on Windows install Ollama natively
+    image: ollama/ollama:latest
+    container_name: ollama
+    profiles: [ai]
+    ports: ["127.0.0.1:11434:11434"]
+    volumes: ["./data/ollama:/root/.ollama"]
+    restart: unless-stopped
+    logging: *default-logging
+    networks: [backend]
+
 networks:
   backend:
     driver: bridge

@@ -19,21 +19,38 @@ package com.google.jetstream
 import android.app.Application
 import com.google.jetstream.data.repositories.MovieRepository
 import com.google.jetstream.data.repositories.MovieRepositoryImpl
-import dagger.Binds
+import android.content.Context
+import com.google.jetstream.data.jellyfin.JellyfinClient
+import com.google.jetstream.data.jellyfin.JellyfinConfig
+import com.google.jetstream.data.jellyfin.JellyfinMovieRepository
 import dagger.Module
+import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.HiltAndroidApp
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import javax.inject.Singleton
 
 @HiltAndroidApp
 class JetStreamApplication : Application()
 
 @InstallIn(SingletonComponent::class)
 @Module
-abstract class MovieRepositoryModule {
+object MovieRepositoryModule {
 
-    @Binds
-    abstract fun bindMovieRepository(
-        movieRepositoryImpl: MovieRepositoryImpl
-    ): MovieRepository
+    /** Vidar: use Jellyfin when configured in vidar_config.xml, else the sample catalog. */
+    @Provides
+    @Singleton
+    fun provideMovieRepository(
+        @ApplicationContext context: Context,
+        sample: MovieRepositoryImpl
+    ): MovieRepository {
+        val config = JellyfinConfig(
+            serverUrl = context.getString(R.string.jellyfin_server_url),
+            username = context.getString(R.string.jellyfin_username),
+            password = context.getString(R.string.jellyfin_password),
+            deviceName = context.getString(R.string.vidar_device_name)
+        )
+        return if (config.enabled) JellyfinMovieRepository(JellyfinClient(config)) else sample
+    }
 }

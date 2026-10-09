@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vidar Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+:root{color-scheme:dark;--void:#0C0D11;--hull:#15161C;--plate:#1E2029;--seam:#2C2F3B;--armor:#5E66BC;--armor-hi:#9AA0F0;--eye:#F070E0;--ok:#7BD88F;--bad:#FF8A80;--warn:#F2C46B;--ink:#E4E6EE;--ink-2:#AEB3C4;--ink-3:#7A8096}
+*{box-sizing:border-box}
+body{margin:0;background:var(--void);color:var(--ink);font:15px/1.5 "IBM Plex Sans",system-ui,sans-serif;padding:20px 16px}
+.wrap{max-width:1180px;margin:auto;display:grid;gap:22px}
+header{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+header h1{font:600 22px "Chakra Petch",sans-serif;letter-spacing:.25em;color:var(--armor-hi);margin:0}
+header .sp{margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+input{background:var(--hull);border:1px solid var(--seam);color:var(--ink);border-radius:8px;padding:8px 10px}
+button{background:var(--plate);color:var(--ink);border:1px solid var(--seam);border-radius:8px;padding:8px 12px;cursor:pointer;font:500 13px inherit}
+button:hover{border-color:var(--armor)}
+button.danger:hover{border-color:var(--bad)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.stat{background:var(--hull);border:1px solid var(--seam);border-radius:10px;padding:14px}
+.stat b{display:block;font:600 26px "Chakra Petch",sans-serif;font-variant-numeric:tabular-nums}
+.stat span{color:var(--ink-3);font-size:13px}
+h2{font:600 16px "Chakra Petch",sans-serif;letter-spacing:.08em;margin:0;color:var(--ink-2);text-transform:uppercase}
+.sites{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px;align-items:start}
+.site{background:var(--hull);border:1px solid var(--seam);border-radius:12px;padding:14px;display:grid;gap:10px;align-content:start}
+.site h3{margin:0;font-size:15px}
+.tv{background:var(--plate);border-radius:10px;padding:12px;display:grid;gap:8px;border-left:3px solid var(--ok)}
+.tv.off{border-left-color:var(--bad)}
+.tv .row{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.tv .meta{font:400 12px "JetBrains Mono",monospace;color:var(--ink-3)}
+.pill{font:500 11px "JetBrains Mono",monospace;padding:3px 8px;border-radius:999px;border:1px solid currentColor}
+.pill.on{color:var(--ok)}.pill.off{color:var(--bad)}
+.acts{display:flex;gap:6px;flex-wrap:wrap}
+svg.spark{width:100%;height:28px}
+table{width:100%;border-collapse:collapse}
+td,th{padding:8px 10px;border-bottom:1px solid var(--seam);text-align:left}
+th{font:400 12px "JetBrains Mono",monospace;color:var(--ink-3)}
+.empty{color:var(--ink-3);background:var(--hull);border:1px dashed var(--seam);border-radius:12px;padding:20px}
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--plate);border:1px solid var(--armor);padding:10px 16px;border-radius:10px;display:none}
+.confirm{display:none;gap:6px;align-items:center;font-size:13px;color:var(--warn)}
+.confirm.show{display:flex}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>VIDAR</h1><span style="color:var(--ink-3)">Fleet dashboard</span>
+    <div class="sp">
+      <label for="tok" style="font-size:13px;color:var(--ink-3)">Password</label>
+      <input id="tok" type="password" placeholder="for actions" autocomplete="current-password">
+      <button id="refresh">Refresh</button>
+    </div>
+  </header>
+  <div class="stats" id="stats"></div>
+  <h2>Locations</h2>
+  <div class="sites" id="sites"></div>
+  <h2>Now playing</h2>
+  <div id="streams"></div>
+</div>
+<div id="toast" role="status"></div>
+<script>
+const $=s=>document.querySelector(s);
+const tok=$('#tok');try{tok.value=localStorage.getItem('vidarTok')||''}catch(e){}
+tok.addEventListener('change',()=>{try{localStorage.setItem('vidarTok',tok.value)}catch(e){}});
+function toast(m){const t=$('#toast');t.textContent=m;t.style.display='block';clearTimeout(toast.h);toast.h=setTimeout(()=>t.style.display='none',3000)}
+function esc(s){return String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+function spark(v){v=v.filter(x=>x!=null);if(v.length<2)return'';const mx=Math.max(...v,1),w=100,h=28;
+ const pts=v.map((y,i)=>`${(i/(v.length-1)*w).toFixed(1)},${(h-2-(y/mx)*(h-4)).toFixed(1)}`).join(' ');
+ return `<svg class="spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-label="latency"><polyline points="${pts}" fill="none" stroke="#9AA0F0" stroke-width="1.5"/></svg>`}
+async function load(){
+ let d;try{d=await (await fetch('api/fleet')).json()}catch(e){$('#sites').innerHTML='<div class="empty">Can’t reach the dashboard API.</div>';return}
+ const on=d.devices.filter(x=>x.online).length;
+ $('#stats').innerHTML=[[`${on}/${d.devices.length}`,'TVs online'],[d.streams.length,'streams playing'],[d.streams.filter(s=>s.transcoding).length,'transcoding'],
+  [`${d.server.disk_used_pct}%`,`disk used · ${d.server.disk_free_gb} GB free`]].map(([b,s])=>`<div class="stat"><b>${b}</b><span>${s}</span></div>`).join('');
+ if(!d.devices.length){$('#sites').innerHTML='<div class="empty">No TVs yet. Add one with <code>inventory/fleet_db.py --add …</code> and it appears here after the next health check.</div>'}
+ else{const by={};d.devices.forEach(x=>(by[x.location||'unassigned']??=[]).push(x));
+  $('#sites').innerHTML=Object.entries(by).map(([loc,tvs])=>`<div class="site"><h3>${esc(loc)}</h3>${tvs.map(t=>`
+   <div class="tv ${t.online?'':'off'}"><div class="row"><b>${esc(t.device_id)}</b><span class="pill ${t.online?'on':'off'}">${t.online?'online':esc(t.state)}</span></div>
+   <div class="meta">${esc(t.model)} · ${esc(t.assigned_ip||'no ip')} · up ${t.uptime_h??'–'} h · ${t.tcp_ms??'–'} ms${t.rustdesk_id?' · RustDesk '+esc(t.rustdesk_id):''}</div>
+   ${spark(t.latency||[])}
+   <div class="acts"><button data-a="trim" data-d="${esc(t.device_id)}">Clear caches</button><button class="danger" data-a="restart" data-d="${esc(t.device_id)}">Restart</button>
+   <span class="confirm" id="c-${esc(t.device_id)}"></span></div></div>`).join('')}</div>`).join('')}
+ $('#streams').innerHTML=d.streams.length?`<table><tr><th>Who</th><th>Device</th><th>Title</th><th>Mode</th></tr>${d.streams.map(s=>`<tr><td>${esc(s.user)}</td><td>${esc(s.device)}</td><td>${esc(s.title)}</td><td>${s.transcoding?'transcode':'direct'}</td></tr>`).join('')}</table>`:'<div class="empty">Nothing playing. (Set JELLYFIN_API_KEY to see streams.)</div>';
+}
+document.addEventListener('click',async e=>{const b=e.target.closest('button[data-a]');if(!b)return;
+ const id=b.dataset.d,a=b.dataset.a,c=document.getElementById('c-'+id);
+ if(b.dataset.ok!=='1'){document.querySelectorAll('button[data-ok]').forEach(x=>x.dataset.ok='');b.dataset.ok='1';c.textContent=`Click again to ${a==='restart'?'restart':'clear caches on'} ${id}`;c.classList.add('show');return}
+ b.dataset.ok='';c.classList.remove('show');b.disabled=true;
+ try{const r=await fetch(`api/devices/${encodeURIComponent(id)}/${a}`,{method:'POST',headers:{'X-Vidar-Token':tok.value}});const j=await r.json();
+  toast(r.ok?`${a==='restart'?'Restarting':'Caches cleared on'} ${id}`:(j.detail||'Action failed'))}catch(err){toast('Action failed: server unreachable')}
+ b.disabled=false});
+$('#refresh').onclick=load;load();setInterval(load,30000);
+</script>
+</body>
+</html>

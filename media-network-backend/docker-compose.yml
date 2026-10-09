@@ -1,0 +1,98 @@
+# =============================================================================
+# media-network-backend — RustDesk (self-hosted) + Jellyfin
+#
+# Usage:  cp .env.example .env && docker compose up -d
+#
+# RustDesk port map (official upstream layout):
+#   hbbs  21115/tcp  NAT type test
+#         21116/tcp  TCP hole punching / connection service
+#         21116/udp  ID registration + heartbeat
+#         21118/tcp  web client support (optional)
+#   hbbr  21117/tcp  relay
+#         21119/tcp  web client relay (optional)
+# =============================================================================
+name: media-network
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  # ---------------------------------------------------------------------------
+  # RustDesk signal / ID server
+  # ---------------------------------------------------------------------------
+  hbbs:
+    image: rustdesk/rustdesk-server:latest
+    container_name: hbbs
+    command: hbbs -r ${RUSTDESK_RELAY_HOST:-hbbr}:21117
+    ports:
+      - "${BIND_IP:-0.0.0.0}:21115:21115/tcp"
+      - "${BIND_IP:-0.0.0.0}:21116:21116/tcp"
+      - "${BIND_IP:-0.0.0.0}:21116:21116/udp"
+      - "${BIND_IP:-0.0.0.0}:21118:21118/tcp"
+    volumes:
+      # Persists db_v2.sqlite3 and the id_ed25519 / id_ed25519.pub key pair.
+      # Shared with hbbr so both use the same key.
+      - ./data/rustdesk:/root
+    environment:
+      TZ: ${TZ:-UTC}
+    depends_on:
+      - hbbr
+    restart: unless-stopped
+    logging: *default-logging
+    networks: [backend]
+
+  # ---------------------------------------------------------------------------
+  # RustDesk relay server
+  # ---------------------------------------------------------------------------
+  hbbr:
+    image: rustdesk/rustdesk-server:latest
+    container_name: hbbr
+    command: hbbr
+    ports:
+      - "${BIND_IP:-0.0.0.0}:21117:21117/tcp"
+      - "${BIND_IP:-0.0.0.0}:21119:21119/tcp"
+    volumes:
+      - ./data/rustdesk:/root
+    environment:
+      TZ: ${TZ:-UTC}
+    restart: unless-stopped
+    logging: *default-logging
+    networks: [backend]
+
+  # ---------------------------------------------------------------------------
+  # Jellyfin media server
+  # ---------------------------------------------------------------------------
+  jellyfin:
+    image: jellyfin/jellyfin:latest
+    container_name: jellyfin
+    user: "${PUID:-1000}:${PGID:-1000}"
+    ports:
+      - "${BIND_IP:-0.0.0.0}:8096:8096/tcp"     # HTTP web UI / API
+      - "${BIND_IP:-0.0.0.0}:7359:7359/udp"     # LAN client auto-discovery
+    volumes:
+      - ./data/jellyfin/config:/config
+      - ./data/jellyfin/cache:/cache
+      - ${MEDIA_PATH:-./data/media}:/media:ro   # read-only: Jellyfin never writes media
+    environment:
+      TZ: ${TZ:-UTC}
+      # Advertised URL when reached through the Cloudflare tunnel
+      JELLYFIN_PublishedServerUrl: https://jelly.example.com
+    # Uncomment for Intel/AMD hardware transcoding:
+    # devices:
+    #   - /dev/dri:/dev/dri
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8096/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+    logging: *default-logging
+    networks: [backend]
+
+networks:
+  backend:
+    driver: bridge

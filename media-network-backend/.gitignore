@@ -2,4 +2,8 @@
 data/**/*
 !data/**/.gitkeep
 !data/**/
-cloudflared/*.json
+
+inventory/fleet.db
+scripts/network/out/
+scripts/maintenance/*.log
+*.json

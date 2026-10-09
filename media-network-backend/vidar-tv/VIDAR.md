@@ -8,6 +8,8 @@ see `LICENSES.md`; original copyright headers kept).
 - App name → "Vidar", applicationId → `com.vidar.tv`, project → `VidarTV`
   (Kotlin package `com.google.jetstream` kept for now to keep the diff small)
 
+- Theme → Vidar blue (navy #0B1220, cobalt #1F4FA3/#7FB2FF, gunmetal, purple accent #C9B3FF); top-bar wordmark → "VIDAR"
+
 ## Next (VIDAR_PLAN.md Phase 4B)
 1. Rebrand: logo/wordmark, Vidar color scheme, ES/EN strings
 2. Swap the sample JSON data layer (`data/`) for the Jellyfin Kotlin SDK

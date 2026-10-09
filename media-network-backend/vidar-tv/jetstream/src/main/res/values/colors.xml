@@ -16,12 +16,12 @@ https://www.apache.org/licenses/LICENSE-2.0
 -->
 
 <resources>
-    <!-- Vidar theme: periwinkle armor #6F8FD8, charcoal frame, magenta eyes, tan + red details -->
+    <!-- Vidar theme: indigo/navy-blue armor #5E66BC, charcoal frame, magenta eyes, tan + red details -->
     <color name="jetstream_background">#111216</color>
-    <color name="primary">#8FA8F0</color>
-    <color name="onPrimary">#14244F</color>
-    <color name="primaryContainer">#4A63A8</color>
-    <color name="onPrimaryContainer">#DCE4FF</color>
+    <color name="primary">#9AA0F0</color>
+    <color name="onPrimary">#1A1C5C</color>
+    <color name="primaryContainer">#3A4192</color>
+    <color name="onPrimaryContainer">#E0E0FF</color>
     <color name="secondary">#B9B08E</color>
     <color name="onSecondary">#2B2716</color>
     <color name="secondaryContainer">#3D3A2C</color>
@@ -40,6 +40,6 @@ https://www.apache.org/licenses/LICENSE-2.0
     <color name="onError">#690005</color>
     <color name="errorContainer">#B3261E</color>
     <color name="onErrorContainer">#FFB4AB</color>
-    <color name="border">#6F8FD8</color>
+    <color name="border">#5E66BC</color>
     <color name="ic_launcher_background">#111216</color>
 </resources>

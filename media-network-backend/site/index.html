@@ -107,12 +107,26 @@ th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--seam);vert
 th{font:500 12px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)}
 td:first-child{color:var(--vent);font-weight:600;white-space:nowrap}
 td:last-child{color:var(--ink-2)}
+
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:24px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 16px;font-size:15px}
+.kv dt{color:var(--ink-3);font:500 13px var(--mono)}
+.kv dd{margin:0;color:var(--ink-2)}
+code,.mono{font:500 13px var(--mono)}
+code{background:var(--plate);border:1px solid var(--seam);border-radius:4px;padding:1px 5px;color:var(--ink)}
+.tech h3{font:600 13px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--armor-hi);margin:8px 0 4px}
+table.t td:first-child{color:var(--ink);font-weight:500;white-space:nowrap}
+table.t td.n{font-family:var(--mono);font-size:13px;color:var(--armor-hi);white-space:nowrap}
+.diagram{overflow-x:auto;background:var(--hull);border:1px solid var(--seam);border-radius:12px;padding:16px}
+.diagram svg{display:block;min-width:720px;width:100%;height:auto}
+pre.cmd{margin:0;background:var(--hull);border:1px solid var(--seam);border-radius:10px;padding:14px;overflow-x:auto;font:500 13px/1.7 var(--mono);color:var(--ink-2)}
+pre.cmd b{color:var(--armor-hi);font-weight:500}
 footer{padding-block:32px;color:var(--ink-3);font-size:13px;border-top:1px solid var(--seam)}
 </style>
 
 <header class="top"><div class="wrap">
   <a class="brand" href="#top"><img class="logo" src="data:image/svg+xml;base64,PCEtLSBWaWRhciBlbWJsZW0g4oCUIG9yaWdpbmFsIGdlb21ldHJpYyBtZWNoYSBjcmVzdCAoVi1maW4sIHZpc29yLCBtYWdlbnRhIGV5ZXMpLgogICAgIEluc3BpcmVkIGJ5IHRoZSBwYWxldHRlL21vb2Qgb25seTsgbm90IGEgdHJhY2Ugb2YgYW55IGV4aXN0aW5nIGRlc2lnbi4gLS0+CjxzdmcgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB2aWV3Qm94PSIwIDAgNTEyIDUxMiI+CiAgPGRlZnM+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImFybW9yIiB4MT0iMCIgeTE9IjAiIHgyPSIwIiB5Mj0iMSI+CiAgICAgIDxzdG9wIG9mZnNldD0iMCIgc3RvcC1jb2xvcj0iIzhFOTZFMCIvPjxzdG9wIG9mZnNldD0iLjU1IiBzdG9wLWNvbG9yPSIjNUU2NkJDIi8+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjM0E0MTkyIi8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogICAgPGxpbmVhckdyYWRpZW50IGlkPSJmcmFtZSIgeDE9IjAiIHkxPSIwIiB4Mj0iMCIgeTI9IjEiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiMzQTNDNDUiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiMxNjE3MUMiLz4KICAgIDwvbGluZWFyR3JhZGllbnQ+CiAgICA8ZmlsdGVyIGlkPSJnbG93IiB4PSItNTAlIiB5PSItMjAwJSIgd2lkdGg9IjIwMCUiIGhlaWdodD0iNTAwJSI+CiAgICAgIDxmZUdhdXNzaWFuQmx1ciBzdGREZXZpYXRpb249IjYiIHJlc3VsdD0iYiIvPjxmZU1lcmdlPjxmZU1lcmdlTm9kZSBpbj0iYiIvPjxmZU1lcmdlTm9kZSBpbj0iU291cmNlR3JhcGhpYyIvPjwvZmVNZXJnZT4KICAgIDwvZmlsdGVyPgogIDwvZGVmcz4KICA8IS0tIGhlbG1ldCBmcmFtZSAtLT4KICA8cGF0aCBkPSJNMjU2IDE1MCBMMzUwIDE5MCBMMzcyIDI5MCBMMzMwIDM4MCBMMjU2IDQzMCBMMTgyIDM4MCBMMTQwIDI5MCBMMTYyIDE5MCBaIiBmaWxsPSJ1cmwoI2ZyYW1lKSIgc3Ryb2tlPSIjMEIwQzEwIiBzdHJva2Utd2lkdGg9IjgiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KICA8IS0tIHNpZGUgdmVudHMgLS0+CiAgPGcgZmlsbD0iIzBCMEMxMCI+PHBhdGggZD0iTTE3MCAyNTAgbDI2IDggLTQgMTQgLTI2IC04eiIvPjxwYXRoIGQ9Ik0xNjQgMjgyIGwyOCA4IC00IDE0IC0yOCAtOHoiLz4KICAgIDxwYXRoIGQ9Ik0zNDIgMjUwIGwtMjYgOCA0IDE0IDI2IC04eiIvPjxwYXRoIGQ9Ik0zNDggMjgyIGwtMjggOCA0IDE0IDI4IC04eiIvPjwvZz4KICA8IS0tIFYtZmluIHdpbmdzIC0tPgogIDxwYXRoIGQ9Ik0yNTYgMjUwIEw2MCA3MCBMOTIgNjIgTDI3MiAyMTggWiIgZmlsbD0idXJsKCNhcm1vcikiIHN0cm9rZT0iIzBCMEMxMCIgc3Ryb2tlLXdpZHRoPSI4IiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+CiAgPHBhdGggZD0iTTI1NiAyNTAgTDQ1MiA3MCBMNDIwIDYyIEwyNDAgMjE4IFoiIGZpbGw9InVybCgjYXJtb3IpIiBzdHJva2U9IiMwQjBDMTAiIHN0cm9rZS13aWR0aD0iOCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgogIDwhLS0gY2VudGVyIGNyZXN0IC0tPgogIDxwYXRoIGQ9Ik0yNTYgNDAgTDI4NiAxMjAgTDI4MiAzMDAgTDI1NiAzMzAgTDIzMCAzMDAgTDIyNiAxMjAgWiIgZmlsbD0idXJsKCNhcm1vcikiIHN0cm9rZT0iIzBCMEMxMCIgc3Ryb2tlLXdpZHRoPSI4IiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+CiAgPHJlY3QgeD0iMjQwIiB5PSIxOTAiIHdpZHRoPSIzMiIgaGVpZ2h0PSI0NCIgcng9IjUiIGZpbGw9IiMyQzJFMzYiIHN0cm9rZT0iIzBCMEMxMCIgc3Ryb2tlLXdpZHRoPSI1Ii8+CiAgPCEtLSB2aXNvciArIG1hZ2VudGEgZXllcyAtLT4KICA8cGF0aCBkPSJNMTk2IDMxOCBMMjQ2IDMzMCBMMjQ2IDM0NCBMMjAwIDMzNCBaIiBmaWxsPSIjRjA3MEUwIiBmaWx0ZXI9InVybCgjZ2xvdykiLz4KICA8cGF0aCBkPSJNMzE2IDMxOCBMMjY2IDMzMCBMMjY2IDM0NCBMMzEyIDMzNCBaIiBmaWxsPSIjRjA3MEUwIiBmaWx0ZXI9InVybCgjZ2xvdykiLz4KICA8IS0tIGNoaW4gLS0+CiAgPHBhdGggZD0iTTIzOCAzNzAgTDI1NiA0MjAgTDI3NCAzNzAgWiIgZmlsbD0iIzNBNDE5MiIgc3Ryb2tlPSIjMEIwQzEwIiBzdHJva2Utd2lkdGg9IjYiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPC9zdmc+Cg==" alt="">VIDAR</a>
-  <nav aria-label="Sections"><a href="#demo">Demo</a><a href="#apps">Apps</a><a href="#status">Setup</a><a href="#cant">Out of scope</a></nav>
+  <nav aria-label="Sections"><a href="#demo">Demo</a><a href="#apps">Apps</a><a href="#arch">Architecture</a><a href="#tech">Tech</a><a href="#status">Setup</a><a href="#cant">Out of scope</a></nav>
 </div></header>
 
 <main id="top">
@@ -147,6 +161,112 @@ footer{padding-block:32px;color:var(--ink-3);font-size:13px;border-top:1px solid
 <section id="apps"><div class="wrap">
   <h2>Everything on the box</h2>
   <div class="list" id="apps-list"></div>
+</div></section>
+
+
+<section id="arch"><div class="wrap">
+  <h2>Architecture</h2>
+  <p class="lede">TVs and the server share a private Tailscale network. Each TV's internet goes out through Mullvad. Only the Jellyfin web page is public, behind a Cloudflare login.</p>
+  <div class="diagram">
+    <svg viewBox="0 0 960 380" role="img" aria-label="Server at home linked over Tailscale to five locations; Mullvad for TV internet; Cloudflare for phones">
+      <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#5E66BC"/></marker></defs>
+      <rect x="330" y="16" width="300" height="128" rx="12" fill="#1E2029" stroke="#5E66BC" stroke-width="2"/>
+      <text x="480" y="44" text-anchor="middle" fill="#9AA0F0" font-size="15" font-weight="600" font-family="IBM Plex Sans,sans-serif">HP OmniDesk · home</text>
+      <text x="480" y="68" text-anchor="middle" fill="#AEB3C4" font-size="12.5" font-family="IBM Plex Sans,sans-serif">Jellyfin · RustDesk · Dashboard · Ollama bot</text>
+      <text x="480" y="88" text-anchor="middle" fill="#AEB3C4" font-size="12.5" font-family="IBM Plex Sans,sans-serif">Immich · Navidrome · Home Assistant · Vaultwarden</text>
+      <text x="480" y="108" text-anchor="middle" fill="#AEB3C4" font-size="12.5" font-family="IBM Plex Sans,sans-serif">HDHomeRun antenna · backups · maintenance</text>
+      <text x="480" y="130" text-anchor="middle" fill="#7A8096" font-size="11.5" font-family="JetBrains Mono,monospace">100.64.0.1 · Ryzen 5 8500G · 16 GB</text>
+      <rect x="724" y="30" width="206" height="100" rx="12" fill="#15161C" stroke="#B9B08E" stroke-dasharray="5 4"/>
+      <text x="827" y="62" text-anchor="middle" fill="#B9B08E" font-size="14" font-weight="600" font-family="IBM Plex Sans,sans-serif">Cloudflare</text>
+      <text x="827" y="84" text-anchor="middle" fill="#AEB3C4" font-size="12" font-family="IBM Plex Sans,sans-serif">jelly.domain · email login</text>
+      <text x="827" y="104" text-anchor="middle" fill="#AEB3C4" font-size="12" font-family="IBM Plex Sans,sans-serif">phones · browsers</text>
+      <line x1="630" y1="80" x2="720" y2="80" stroke="#B9B08E" stroke-width="2" marker-end="url(#ar)"/>
+      <rect x="30" y="30" width="206" height="100" rx="12" fill="#15161C" stroke="#F070E0" stroke-dasharray="5 4"/>
+      <text x="133" y="62" text-anchor="middle" fill="#F070E0" font-size="14" font-weight="600" font-family="IBM Plex Sans,sans-serif">Mullvad exit nodes</text>
+      <text x="133" y="84" text-anchor="middle" fill="#AEB3C4" font-size="12" font-family="IBM Plex Sans,sans-serif">TV internet traffic</text>
+      <text x="133" y="104" text-anchor="middle" fill="#AEB3C4" font-size="12" font-family="IBM Plex Sans,sans-serif">no-log VPN</text>
+      <text x="480" y="196" text-anchor="middle" fill="#9AA0F0" font-size="13" font-weight="600" font-family="IBM Plex Sans,sans-serif">Tailscale mesh · encrypted · no open ports</text>
+      <g id="sitesvg"></g>
+    </svg>
+  </div>
+</div></section>
+
+<section id="tech" class="tech"><div class="wrap">
+  <h2>Tech reference</h2>
+  <div class="grid2">
+    <div>
+      <h3>Server</h3>
+      <dl class="kv">
+        <dt>Machine</dt><dd>HP OmniDesk M02-0310, Windows 11 Home</dd>
+        <dt>CPU / GPU</dt><dd>Ryzen 5 8500G (6 cores) · Radeon 740M (AMD AMF encode)</dd>
+        <dt>RAM</dt><dd>16 GB DDR5, two matched sticks (8 GB minimum)</dd>
+        <dt>Storage</dt><dd>512 GB NVMe for Windows · 4–8 TB drive for media</dd>
+        <dt>Runtime</dt><dd>Docker Desktop (WSL2), Jellyfin native, Python 3.12</dd>
+        <dt>Addresses</dt><dd>LAN 192.168.1.50 (DHCP reservation) · Tailscale 100.64.0.1</dd>
+        <dt>Power</dt><dd>Sleep off, power-on after outage, UPS shutdown at 30%</dd>
+      </dl>
+    </div>
+    <div>
+      <h3>TV boxes</h3>
+      <dl class="kv">
+        <dt>Onn 4K Pro</dt><dd>S905X5M, 3 GB RAM, 32 GB, Wi-Fi 6, 100 Mb Ethernet</dd>
+        <dt>RockTek G2</dt><dd>S905X4-K, 4 GB RAM, 64 GB, Wi-Fi 6, Gigabit, Dolby Vision</dd>
+        <dt>OS</dt><dd>Google TV, network debugging on, ADB port 5555</dd>
+        <dt>Network</dt><dd>Location guest Wi-Fi · Tailscale 100.64.0.x · Mullvad exit</dd>
+        <dt>DNS</dt><dd>NextDNS Private DNS (kids profile on kids TVs)</dd>
+        <dt>Home app</dt><dd>Vidar TV <code>com.vidar.tv</code> · fallback Projectivy</dd>
+        <dt>Bandwidth</dt><dd>4K HEVC 20–30 Mbps · remote cap ≈12 Mbps per location</dd>
+      </dl>
+    </div>
+  </div>
+
+  <h3>Services and ports</h3>
+  <div class="tbl"><table class="t">
+    <thead><tr><th>Service</th><th>Port</th><th>Runs as</th><th>Reach it from</th></tr></thead>
+    <tbody id="ports"></tbody>
+  </table></div>
+
+  <h3>Schedules</h3>
+  <div class="tbl"><table class="t">
+    <thead><tr><th>Job</th><th>When</th><th>Script</th></tr></thead>
+    <tbody>
+      <tr><td>TV maintenance</td><td class="n">Tue · Fri 04:00</td><td><code>scripts/maintenance/android-maintenance-fleet.sh</code></td></tr>
+      <tr><td>Health check</td><td class="n">every 15 min</td><td><code>scripts/maintenance/fleet_health.py</code></td></tr>
+      <tr><td>Backup (encrypted)</td><td class="n">daily 03:00</td><td><code>scripts/backup/vidar_backup.py</code></td></tr>
+      <tr><td>Container updates</td><td class="n">Sun 04:00</td><td>What’s Up Docker</td></tr>
+      <tr><td>Bot summary / report</td><td class="n">daily 09:00 · Sun 10:00</td><td><code>bot/vidar_bot.py</code></td></tr>
+      <tr><td>UPS watch</td><td class="n">every 2 min</td><td><code>windows/ups-shutdown.ps1</code></td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Accounts and keys (.env)</h3>
+  <div class="tbl"><table class="t">
+    <thead><tr><th>Account</th><th>Used for</th><th>Setting</th></tr></thead>
+    <tbody>
+      <tr><td>Tailscale + Mullvad add-on</td><td>Private network, TV VPN, lockdown</td><td><code>TAILSCALE_API_KEY</code></td></tr>
+      <tr><td>Cloudflare</td><td>Domain, tunnel, login wall</td><td><code>CLOUDFLARE_API_TOKEN</code> <code>ACCESS_ALLOWED_EMAILS</code></td></tr>
+      <tr><td>NextDNS</td><td>DNS filtering, kids profile</td><td><code>NEXTDNS_PROFILE_ID</code> <code>NEXTDNS_API_KEY</code></td></tr>
+      <tr><td>Jellyfin</td><td>Dashboard streams, setup script</td><td><code>JELLYFIN_API_KEY</code></td></tr>
+      <tr><td>Telegram</td><td>Vidar Assistant</td><td><code>TELEGRAM_BOT_TOKEN</code> <code>TELEGRAM_ALLOWED_IDS</code></td></tr>
+      <tr><td>Backblaze B2 (optional)</td><td>Off-site backup copy</td><td><code>RCLONE_REMOTE</code> <code>BACKUP_AGE_RECIPIENT</code></td></tr>
+      <tr><td>Dashboard</td><td>Password for actions</td><td><code>DASHBOARD_TOKEN</code></td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Key commands</h3>
+<pre class="cmd"><b># server</b>
+.\windows\install-server.ps1
+.\windows\setup-tunnels.ps1 -Domain yours.com
+python scripts\jellyfin\setup-jellyfin.py --hdhomerun auto --fast us --kids Kids
+python scripts\security\cloudflare-access.py --domain yours.com
+.\windows\check-services.ps1
+<b># each TV</b>
+python scripts/provision/provision-tv.py --ip 100.64.0.11 --device-id APT-LIVING --model "RockTek G2" --location apartment
+python scripts/provision/provision-tv.py --ip 100.64.0.11 --device-id APT-LIVING --model "RockTek G2" --location apartment --check-vpn
+<b># fleet</b>
+python inventory/fleet_db.py --list
+python scripts/maintenance/fleet_health.py
+docker compose --profile apps --profile media up -d</pre>
 </div></section>
 
 <section id="status"><div class="wrap">
@@ -205,6 +325,21 @@ const CANT=[
 const el=h=>{const t=document.createElement('template');t.innerHTML=h.trim();return t.content.firstChild};
 const L=document.getElementById('apps-list');
 APPS_LIST.forEach(([g,items])=>{L.append(el(`<h3>${g}</h3>`));items.forEach(a=>L.append(el(`<div class="item"><b>${a[0]}</b><span>${a[1]}</span><i class="${a[2]||''}">${a[2]?'BUY':'INCLUDED'}</i></div>`)))});
+
+const PORTS=[["Jellyfin","8096","Windows service","Tailscale · Cloudflare (web)"],["RustDesk ID / relay","21115–21119","Docker","Tailscale"],
+ ["Vidar Dashboard","8080","Docker","Tailscale"],["Ollama","11434","Windows app","server only"],["Home Assistant","8123","Docker","Tailscale"],
+ ["Immich","2283","Docker","Tailscale"],["Navidrome","4533","Docker","Tailscale"],["Audiobookshelf","13378","Docker","Tailscale"],
+ ["Jellyseerr","5055","Docker","Tailscale"],["Uptime Kuma","3001","Docker","Tailscale"],["Bazarr","6767","Docker","Tailscale"],["Tdarr","8265","Docker","Tailscale"],
+ ["Vaultwarden","8222","Docker","server only (localhost)"],["What’s Up Docker","3010","Docker","server only (localhost)"],["ADB on TVs","5555","each TV","server only (Tailscale rule)"]];
+PORTS.forEach(r=>document.getElementById('ports').append(el(`<tr><td>${r[0]}</td><td class="n">${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td></tr>`)));
+const SITES=[["Apartment",["RockTek G2","Onn 4K Pro"]],["Home",["RockTek G2","Onn 4K Pro"]],["Partner",["Onn 4K Pro"]],["Office",["Onn 4K Pro"]],["Second home",["RockTek G2"]]];
+(function(){const g=document.getElementById('sitesvg');const n=SITES.length,w=160,gap=(960-60-n*w)/(n-1);
+ SITES.forEach(([name,tvs],i)=>{const x=30+i*(w+gap),cx=x+w/2;
+  g.insertAdjacentHTML('beforeend',`<line x1="480" y1="144" x2="${cx}" y2="262" stroke="#5E66BC" stroke-width="2" marker-end="url(#ar)"/>
+  <rect x="${x}" y="266" width="${w}" height="92" rx="12" fill="#15161C" stroke="#2C2F3B"/>
+  <text x="${cx}" y="294" text-anchor="middle" fill="#E4E6EE" font-size="14" font-weight="600" font-family="IBM Plex Sans,sans-serif">${name}</text>
+  <text x="${cx}" y="317" text-anchor="middle" fill="#AEB3C4" font-size="12" font-family="IBM Plex Sans,sans-serif">${tvs.length} TV${tvs.length>1?'s':''}</text>
+  <text x="${cx}" y="338" text-anchor="middle" fill="#7A8096" font-size="11" font-family="IBM Plex Sans,sans-serif">${tvs.map(t=>t.split(' ')[0]).join(' · ')}</text>`)})})();
 CANT.forEach(c=>document.getElementById('cant-list').append(el(`<tr><td>${c[0]}</td><td>${c[1]}</td></tr>`)));
 /* ---------- TV demo ---------- */
 const TABS=["Home","Categories","Movies","Shows","Live","Favorites","Apps"];

@@ -6,7 +6,6 @@ data/**/*
 inventory/fleet.db
 scripts/network/out/
 scripts/maintenance/*.log
-*.json
 backups/
 data/**/*
 !data/**/.gitkeep

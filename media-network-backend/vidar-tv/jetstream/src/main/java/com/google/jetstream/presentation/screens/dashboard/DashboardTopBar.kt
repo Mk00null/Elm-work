@@ -16,6 +16,7 @@
 
 package com.google.jetstream.presentation.screens.dashboard
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -43,6 +44,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.focusRestorer
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -176,13 +178,14 @@ private fun JetStreamLogo(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(
-            Icons.Default.PlayCircle,
+        // Vidar logo: replace res/drawable-nodpi/vidar_logo.png with any square PNG
+        Image(
+            painter = painterResource(R.drawable.vidar_logo),
             contentDescription = StringConstants.Composable
                 .ContentDescription.BrandLogoImage,
             modifier = Modifier
-                .padding(end = 4.dp)
-                .size(IconSize)
+                .padding(end = 8.dp)
+                .size(IconSize * 1.5f)
         )
         Text(
             text = stringResource(R.string.brand_logo_text),

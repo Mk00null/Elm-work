@@ -20,3 +20,10 @@ see `LICENSES.md`; original copyright headers kept).
 Requires Android Studio (or JDK 17 + Android SDK). From this folder:
 `./gradlew :jetstream:assembleDebug` → `jetstream/build/outputs/apk/debug/`
 Install: `adb install -r jetstream-debug.apk`
+
+## Using your own logo image (private)
+The top-bar logo loads `jetstream/src/main/res/drawable-nodpi/vidar_logo.png`
+(default: the original emblem in `branding/`). To use a different image on
+your own boxes, overwrite that file locally with a square transparent PNG
+(512×512 recommended) and rebuild. For the launcher icon, use Android Studio →
+New → Image Asset with the same file. Keep third-party artwork out of commits.

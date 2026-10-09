@@ -21,7 +21,7 @@ inventory/fleet_db.py --add --device-id TV-001 --model "Onn 4K Pro" \
   --mac <MAC> --ip <IP> --notes "living room"
 inventory/fleet_db.py --export-devices scripts/maintenance/devices.conf
 ```
-Reserve the IP as a DHCP static lease on your router.
+Use the box's Tailscale `100.x` IP (see MULTI_SITE.md) and add `--location <site>`.
 
 ## 4. Remote anchor (RustDesk)
 `adb install rustdesk-<ver>-aarch64.apk` (from github.com/rustdesk/rustdesk/releases).

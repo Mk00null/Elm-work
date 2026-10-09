@@ -52,7 +52,7 @@ Legend: ✅ done · 🔨 to build · 🛒 to buy · 👤 you do it
 | 3.5 | Maintenance: adapt to debugging mode found in 0.3 (reboot vs no-reboot variant) | 🔨 |
 | 3.6 | Windows Task Scheduler for Tue/Fri 04:00 + 15-min health checks | ✅ draft · 🔨 finalize |
 
-| 3.7 | **Projectivy Launcher** pushed by `provision-tv.py`: ad-free Vidar home screen (Jellyfin · Stremio · TiviMate · Live), set as default launcher, Vidar wallpaper | 🔨 |
+| 3.7 | **Projectivy Launcher** (fallback home screen until Vidar TV app ships) pushed by `provision-tv.py`: ad-free Vidar home screen (Jellyfin · Stremio · TiviMate · Live), set as default launcher, Vidar wallpaper | 🔨 |
 | 3.8 | **Bilingual ES/EN**: per-location TV system language, Jellyfin profile language + Spanish audio/subtitle preference | 🔨 |
 
 **Exit:** a new box goes from unboxed to ready in ~15 min with one command.
@@ -71,7 +71,23 @@ Stack: FastAPI (Python, reuses fleet_db + health code) + single-page HTML/JS, da
 
 Also: 🔨 Jellyfin custom CSS "Vidar" theme + per-location profiles; 🔨 Jellyseerr (Docker) for family requests.
 
-## Phase 5 — Reliability (week 3–4)
+## Phase 4B — Vidar TV app (Jet Stream UI) (weeks 3–5)
+The TV-side interface, built on Google's **Jet Stream** sample (Jetpack Compose for TV, Apache-2.0):
+https://github.com/android/tv-samples/tree/main/JetStreamCompose · design: goo.gle/jet-stream-figma
+
+| # | Deliverable |
+|---|---|
+| 4B.1 | Fork JetStreamCompose → `vidar-tv/`, rebrand (name, icon, Vidar colors, Inter font, ES/EN strings) |
+| 4B.2 | Replace sample data layer with **Jellyfin Kotlin SDK**: login per location, Home hero carousel = Jellyfin "featured/latest", rows = Continue Watching · Recently Added · genres |
+| 4B.3 | Screens mapped: Home · Categories (Jellyfin genres) · Movies · Shows (seasons/episodes) · Favorites (Jellyfin favorites) · Search · Details · Settings |
+| 4B.4 | **Live tab**: Jellyfin Live TV with free FAST M3U/XMLTV (Pluto, Samsung TV Plus, Plex) → guide grid in Jet Stream style |
+| 4B.5 | Playback: Media3/ExoPlayer (in sample) with Jellyfin direct-play/transcode URLs, resume position sync, subtitles/audio picker (ES default) |
+| 4B.6 | Server address via Tailscale IP, auto-discovered; no keys hard-coded |
+| 4B.7 | Build signed APK on the server (GitHub Actions or local Gradle); `provision-tv.py` installs it and sets it as the home app (replaces Projectivy as the main UI) |
+| 4B.8 | Optional "Apps" row linking out to Stremio, TiviMate and your paid services' apps |
+
+**Exit:** turning on any of the 7 TVs lands in Vidar TV, showing your library in the Jet Stream look.
+ (week 3–4)
 | # | Deliverable |
 |---|---|
 | 5.1 | Uptime Kuma (Docker): monitors Jellyfin, tunnel, RustDesk, each TV → phone push alerts |
@@ -139,4 +155,4 @@ Guardrails: allowlist of your Telegram user ID only; every write action needs a 
 | Power outage | BIOS power-on, services auto-start; optional small UPS ($60) |
 
 ## Build order (my next actions when you say go)
-1.1 → 1.4 → 1.5 → 3.2/3.3 → 4 → 5.1/5.2 → 6
+1.1 → 1.4 → 1.5 → 3.2/3.3 → 4B → 4 → 5.1/5.2 → 6

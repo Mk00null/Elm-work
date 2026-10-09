@@ -22,7 +22,8 @@ Requires Android Studio (or JDK 17 + Android SDK). From this folder:
 Install: `adb install -r jetstream-debug.apk`
 
 ## Using your own logo image (private)
-The top-bar logo loads `jetstream/src/main/res/drawable-nodpi/vidar_logo.png`
+Set `brand_logo_url` in `res/values/strings.xml` to any image link to load the logo from the web (Coil; falls back to the file below if empty or unreachable). Preview: `mockups/logo-link.html`.
+The top-bar logo otherwise loads `jetstream/src/main/res/drawable-nodpi/vidar_logo.png`
 (default: the original emblem in `branding/`). To use a different image on
 your own boxes, overwrite that file locally with a square transparent PNG
 (512×512 recommended) and rebuild. For the launcher icon, use Android Studio →

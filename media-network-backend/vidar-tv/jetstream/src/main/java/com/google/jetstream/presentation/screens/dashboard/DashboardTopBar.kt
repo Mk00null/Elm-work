@@ -16,7 +16,6 @@
 
 package com.google.jetstream.presentation.screens.dashboard
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -54,6 +53,7 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Tab
 import androidx.tv.material3.TabRow
 import androidx.tv.material3.Text
+import coil.compose.AsyncImage
 import com.google.jetstream.R
 import com.google.jetstream.data.util.StringConstants
 import com.google.jetstream.presentation.screens.Screens
@@ -176,9 +176,14 @@ private fun JetStreamLogo(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Vidar logo: replace res/drawable-nodpi/vidar_logo.png with any square PNG
-        Image(
-            painter = painterResource(R.drawable.vidar_logo),
+        // Vidar logo: loads brand_logo_url (any image link) if set,
+        // otherwise falls back to res/drawable-nodpi/vidar_logo.png
+        val fallback = painterResource(R.drawable.vidar_logo)
+        AsyncImage(
+            model = stringResource(R.string.brand_logo_url).ifBlank { null },
+            placeholder = fallback,
+            error = fallback,
+            fallback = fallback,
             contentDescription = StringConstants.Composable
                 .ContentDescription.BrandLogoImage,
             modifier = Modifier

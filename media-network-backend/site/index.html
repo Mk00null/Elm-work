@@ -284,7 +284,7 @@ footer{padding-block:40px;color:var(--ink-3);font-size:13px;border-top:1px solid
 <!-- ===== ROADMAP ===== -->
 <section id="roadmap"><div class="wrap">
   <div><div class="label">Build plan</div><h2>Roadmap</h2></div>
-  <p class="lede">Bars show how much of each phase is already written and pushed. Nothing is deployed until you approve it.</p>
+  <p class="lede">Bars show how much of each phase's code is written and pushed. The rest is setup on your hardware.</p>
   <div class="road" id="road"></div>
 </div></section>
 
@@ -333,13 +333,13 @@ const LOGO=document.querySelector('.logo').getAttribute('src');
 
 /* ---------- data ---------- */
 const APPS_TV=[
- ["Vidar TV","Home screen app on Jet Stream: library, live guide, search, favorites.","build","vidar-tv/"],
+ ["Vidar TV","Home screen app on Jet Stream: library, live guide, search, favorites.","done","vidar-tv/"],
  ["Jellyfin client","Fallback player for your library, one profile per location.","done","PROVISIONING_RUNBOOK.md"],
- ["Live channels (TiviMate)","Free FAST lineups: Pluto TV, Samsung TV Plus, Plex, with XMLTV guide.","build","Phase 3.3"],
- ["Stremio","Legal add-ons only: Cinemeta, Jellyfin, Trakt, YouTube.","build","Phase 3.3"],
+ ["Live channels (TiviMate)","Free FAST lineups: Pluto TV, Samsung TV Plus, Plex, with XMLTV guide.","done","Phase 3.3"],
+ ["Stremio","Legal add-ons only: Cinemeta, Jellyfin, Trakt, YouTube.","done","Phase 3.3"],
  ["RustDesk","Unattended remote control through your own server.","done","docker-compose.yml"],
  ["Tailscale","Private mesh that links all seven boxes to the server.","done","MULTI_SITE.md"],
- ["Projectivy Launcher","Ad-free fallback home screen until Vidar TV ships.","build","Phase 3.7"],
+ ["Projectivy Launcher","Ad-free fallback home screen until Vidar TV ships.","done","Phase 3.7"],
  ["NextDNS Private DNS","Tracker and telemetry blocking set over ADB.","done","configure-nextdns.sh"]];
 const APPS_SRV=[
  ["Jellyfin Server","Your library with AMD AMF hardware transcoding.","done","docker-compose.yml"],
@@ -347,15 +347,15 @@ const APPS_SRV=[
  ["Cloudflare Tunnel","Public HTTPS for the Jellyfin web page only.","done","setup-tunnels.sh"],
  ["Fleet database","SQLite inventory of every box and location.","done","inventory/fleet_db.py"],
  ["Maintenance + health","Cache trim and reboot Tue/Fri 04:00; checks every 15 min.","done","scripts/maintenance/"],
- ["Vidar Dashboard","Web control panel for TVs, server load and actions.","build","Phase 4"],
- ["Jellyseerr","Family request page for titles to add.","build","Phase 4"],
- ["Uptime Kuma","Phone alerts when a TV or service goes down.","build","Phase 5.1"],
- ["Bazarr","Spanish and English subtitles for your library.","build","Phase 5.3"],
- ["Tdarr","Re-encodes your files to HEVC to save space and upload.","build","Phase 5.4"],
- ["Home Assistant","Power, apps and scenes for every TV; voice control.","build","Phase 5.6"],
- ["Backups","Nightly to the media drive, encrypted copy to Backblaze.","build","Phase 5.2, 5.5"],
- ["Ollama + Vidar bot","Local AI assistant on Telegram.","build","Phase 6"],
- ["Windows installer","One PowerShell script installs the whole server.","build","Phase 1.1"]];
+ ["Vidar Dashboard","Web control panel for TVs, server load and actions.","done","Phase 4"],
+ ["Jellyseerr","Family request page for titles to add.","done","Phase 4"],
+ ["Uptime Kuma","Phone alerts when a TV or service goes down.","done","Phase 5.1"],
+ ["Bazarr","Spanish and English subtitles for your library.","done","Phase 5.3"],
+ ["Tdarr","Re-encodes your files to HEVC to save space and upload.","done","Phase 5.4"],
+ ["Home Assistant","Power, apps and scenes for every TV; voice control.","done","Phase 5.6"],
+ ["Backups","Nightly to the media drive, encrypted copy to Backblaze.","done","Phase 5.2, 5.5"],
+ ["Ollama + Vidar bot","Local AI assistant on Telegram.","done","Phase 6"],
+ ["Windows installer","One PowerShell script installs the whole server.","done","Phase 1.1"]];
 const STATUS={done:"WRITTEN",build:"TO BUILD",you:"YOU",buy:"BUY"};
 const SITES=[
  ["Apartment",[["APT-LIVING","RockTek G2",1],["APT-BED","Onn 4K Pro",1]]],
@@ -368,15 +368,17 @@ const AI_TOOLS=[["fleet_status","Runs the health check and sums it up.","Read on
  ["run_maintenance","Cache trim on one box or all.","Needs ✅"],["daily_summary","9 AM report: fleet, storage, anything broken.","Scheduled"]];
 const ROAD=[
  ["Week 0","Hardware & accounts",["16 GB RAM, media drive, one test Onn","Domain, Tailscale, NextDNS, Cloudflare, Trakt, Telegram","Measure home upload speed"],0],
- ["Week 1","Windows server",["One-click PowerShell installer","Jellyfin with AMD transcoding","Status and tunnel scripts for Windows"],35],
- ["Week 1–2","Network mesh & DNS",["Tailscale on server and all TVs","Access rules: server-only control","NextDNS on every box"],70],
- ["Week 2","TV provisioning",["provision-tv: apps, DNS, launcher in one command","Free channels, legal Stremio add-ons, Trakt","Maintenance tuned to the Onn's debug mode"],55],
- ["Week 3–5","Vidar TV app",["Jet Stream fork in Vidar indigo","Jellyfin SDK data, live guide, player","Logo from a file or a link"],25],
- ["Week 3","Dashboard & requests",["Vidar Dashboard web panel","Jellyfin theme, Jellyseerr"],0],
- ["Week 3–4","Reliability",["Uptime Kuma alerts, nightly and cloud backups","Bazarr, Tdarr, Home Assistant","Restore drill under one hour"],0],
- ["Week 4–5","AI assistant",["Ollama with a 3B–7B model","Telegram bot with confirm-to-act","Daily summary and instant alerts"],0],
+ ["Week 1","Windows server",["One-click PowerShell installer","Jellyfin with AMD transcoding","Status and tunnel scripts for Windows"],100],
+ ["Week 1–2","Network mesh & DNS",["Tailscale on server and all TVs","Access rules: server-only control","NextDNS on every box"],85],
+ ["Week 2","TV provisioning",["provision-tv: apps, DNS, launcher in one command","Free channels, legal Stremio add-ons, Trakt","Maintenance tuned to the Onn's debug mode"],90],
+ ["Week 3–5","Vidar TV app",["Jet Stream fork in Vidar indigo","Jellyfin SDK data, live guide, player","Logo from a file or a link"],80],
+ ["Week 3","Dashboard & requests",["Vidar Dashboard web panel","Jellyfin theme, Jellyseerr"],90],
+ ["Week 3–4","Reliability",["Uptime Kuma alerts, nightly and cloud backups","Bazarr, Tdarr, Home Assistant","Restore drill under one hour"],85],
+ ["Week 4–5","AI assistant",["Ollama with a 3B–7B model","Telegram bot with confirm-to-act","Daily summary and instant alerts"],90],
  ["Week 6","Polish",["Bilingual printed card per location","v1.0 tag"],0]];
 const CANT=[
+ ["PPV boxing / UFC bouquets","Unlicensed pay-per-view from the reseller panel.","Buy events in the official DAZN, ESPN+ or PPV app on the box."],
+ ["Stealth from ISPs and rights holders","Hiding what's streamed is evasion, not privacy.","Privacy is built in: Tailscale, Cloudflare Access, NextDNS, no open ports."],
  ["Thunder IPTV reseller lines","Resold pay channels and PPV without a license from the rights holders.","Live sports through services you subscribe to (YouTube TV, DAZN, F1 TV, NBA League Pass, Peacock, ViX), plus free FAST channels."],
  ["Torrentio + TorBox in Stremio","Streams pirated movies and shows.","Your own Jellyfin library inside Stremio and Vidar TV, plus legal add-ons."],
  ["Sonarr / Radarr torrent automation","Automates downloading copyrighted media.","Jellyseerr requests and Tdarr for files you already own."],

@@ -9,6 +9,8 @@ Legend: ✅ done · 🔨 to build · 🛒 to buy · 👤 you do it
 
 **Status (code):** Windows installer, dashboard, bot, provisioning, backups, extra services and the Jellyfin-backed TV app are written — see README.md. Remaining work is setup on your hardware. Out-of-scope items: WONT_ADD.md.
 
+**Status (code):** Windows installer, dashboard, bot, provisioning, backups, extra services and the Jellyfin-backed TV app are written — see README.md. Remaining work is setup on your hardware. Out-of-scope items: WONT_ADD.md.
+
 ---
 
 ## Phase 0 — Hardware & accounts (week 0)

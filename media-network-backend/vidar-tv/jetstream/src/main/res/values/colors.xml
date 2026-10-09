@@ -16,30 +16,30 @@ https://www.apache.org/licenses/LICENSE-2.0
 -->
 
 <resources>
-    <!-- Vidar theme: navy armor, cobalt blue, gunmetal, purple accent -->
-    <color name="jetstream_background">#0B1220</color>
-    <color name="primary">#7FB2FF</color>
-    <color name="onPrimary">#00244F</color>
-    <color name="primaryContainer">#1F4FA3</color>
-    <color name="onPrimaryContainer">#D8E6FF</color>
-    <color name="secondary">#A9B8CF</color>
-    <color name="onSecondary">#1C2838</color>
-    <color name="secondaryContainer">#2C3A50</color>
-    <color name="onSecondaryContainer">#D6E2F5</color>
-    <color name="tertiary">#C9B3FF</color>
-    <color name="onTertiary">#2E1A5C</color>
-    <color name="tertiaryContainer">#4A3585</color>
-    <color name="onTertiaryContainer">#EADDFF</color>
-    <color name="background">#0B1220</color>
-    <color name="onBackground">#E2E8F2</color>
-    <color name="surface">#101A2C</color>
-    <color name="onSurface">#E2E8F2</color>
-    <color name="surfaceVariant">#2A3850</color>
-    <color name="onSurfaceVariant">#B8C4D6</color>
-    <color name="error">#FFB4AB</color>
+    <!-- Vidar theme: periwinkle armor #6F8FD8, charcoal frame, magenta eyes, tan + red details -->
+    <color name="jetstream_background">#111216</color>
+    <color name="primary">#8FA8F0</color>
+    <color name="onPrimary">#14244F</color>
+    <color name="primaryContainer">#4A63A8</color>
+    <color name="onPrimaryContainer">#DCE4FF</color>
+    <color name="secondary">#B9B08E</color>
+    <color name="onSecondary">#2B2716</color>
+    <color name="secondaryContainer">#3D3A2C</color>
+    <color name="onSecondaryContainer">#ECE3C2</color>
+    <color name="tertiary">#F070E0</color>
+    <color name="onTertiary">#4A0B44</color>
+    <color name="tertiaryContainer">#7A1F70</color>
+    <color name="onTertiaryContainer">#FFD7F6</color>
+    <color name="background">#111216</color>
+    <color name="onBackground">#E4E6EE</color>
+    <color name="surface">#1C1D22</color>
+    <color name="onSurface">#E4E6EE</color>
+    <color name="surfaceVariant">#2C2E36</color>
+    <color name="onSurfaceVariant">#BFC4D4</color>
+    <color name="error">#FF8A80</color>
     <color name="onError">#690005</color>
-    <color name="errorContainer">#93000A</color>
+    <color name="errorContainer">#B3261E</color>
     <color name="onErrorContainer">#FFB4AB</color>
-    <color name="border">#5E7397</color>
-    <color name="ic_launcher_background">#0B1220</color>
+    <color name="border">#6F8FD8</color>
+    <color name="ic_launcher_background">#111216</color>
 </resources>

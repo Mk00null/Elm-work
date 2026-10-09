@@ -8,7 +8,7 @@ see `LICENSES.md`; original copyright headers kept).
 - App name → "Vidar", applicationId → `com.vidar.tv`, project → `VidarTV`
   (Kotlin package `com.google.jetstream` kept for now to keep the diff small)
 
-- Theme → Vidar blue (navy #0B1220, cobalt #1F4FA3/#7FB2FF, gunmetal, purple accent #C9B3FF); top-bar wordmark → "VIDAR"
+- Theme → Vidar palette: charcoal #111216/#1C1D22, periwinkle #8FA8F0 on #4A63A8 (focus border #6F8FD8), magenta accent #F070E0, tan #B9B08E, red #FF8A80; wordmark "VIDAR"
 
 ## Next (VIDAR_PLAN.md Phase 4B)
 1. Rebrand: logo/wordmark, Vidar color scheme, ES/EN strings

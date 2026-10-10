@@ -1731,6 +1731,12 @@ function detectStraightLine(levels) {
 // The help text states what the address is for and what it is not for,
 // in two sentences. Longer than that and nobody reads it.
 const EMAIL_QUESTION_TITLE = "Email";
+// Optional. A required field is one more thing between a bartender and a
+// finished count, and the cost of skipping it is small and self-correcting:
+// no address means no reminder for that person until they fill it in once,
+// and the next submission that carries one updates the roster.
+// Flip to true if too few are coming through.
+const EMAIL_QUESTION_REQUIRED = false;
 const EMAIL_QUESTION_HELP =
   "Only used for a 9:30pm reminder on nights the count hasn't been " +
   "submitted yet. Nothing else is sent to this address.";
@@ -2050,7 +2056,7 @@ function addEmailQuestion() {
   item = item.asTextItem();
   item.setTitle(EMAIL_QUESTION_TITLE)
       .setHelpText(EMAIL_QUESTION_HELP)
-      .setRequired(true);
+      .setRequired(EMAIL_QUESTION_REQUIRED);
   try {
     item.setValidation(FormApp.createTextValidation()
       .setHelpText("Please enter a valid email address.")
@@ -2076,7 +2082,8 @@ function addEmailQuestion() {
   } else {
     Logger.log("No Bartender question found - Email left where it is.");
   }
-  Logger.log(existing ? "Email question refreshed." : "Email question added.");
+  Logger.log((existing ? "Email question refreshed" : "Email question added") +
+             " - " + (EMAIL_QUESTION_REQUIRED ? "required." : "optional."));
 }
 
 // Writes the suggested par into the Par Level column of the current

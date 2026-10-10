@@ -1,0 +1,47 @@
+name: Vidar build
+
+on:
+  push:
+    paths: ["media-network-backend/**", ".github/workflows/vidar.yml"]
+  pull_request:
+    paths: ["media-network-backend/**", ".github/workflows/vidar.yml"]
+
+jobs:
+  tv-app:
+    name: Vidar TV APK
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: media-network-backend/vidar-tv
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: "17" }
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Build debug APK
+        run: ./gradlew :jetstream:assembleDebug --stacktrace
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vidar-tv-debug-apk
+          path: media-network-backend/vidar-tv/jetstream/build/outputs/apk/debug/*.apk
+
+  backend:
+    name: Scripts and Python
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: media-network-backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - name: Install Python deps
+        run: pip install -r dashboard/requirements.txt -r bot/requirements.txt
+      - name: Python compile + tests
+        run: |
+          python -m compileall -q inventory scripts dashboard bot
+          python -m unittest discover -s tests -v
+      - name: Shell syntax
+        run: for f in $(find . -name '*.sh' -not -path './vidar-tv/*'); do bash -n "$f"; done
+      - name: Compose config
+        run: cp .env.example .env && docker compose config -q

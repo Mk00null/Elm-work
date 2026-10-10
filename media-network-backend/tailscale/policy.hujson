@@ -1,0 +1,25 @@
+// Vidar Tailscale policy — paste into https://login.tailscale.com/admin/acls
+// Tag the server "tag:vidar-server" and every TV "tag:vidar-tv" (Machines → Edit ACL tags).
+{
+  "tagOwners": {
+    "tag:vidar-server": ["autogroup:admin"],
+    "tag:vidar-tv":     ["autogroup:admin"],
+  },
+  "acls": [
+    // Your own phone/laptop can reach everything.
+    {"action": "accept", "src": ["autogroup:admin"], "dst": ["*:*"]},
+    // Server → TVs: ADB (5555) and RustDesk.
+    {"action": "accept", "src": ["tag:vidar-server"], "dst": ["tag:vidar-tv:5555,21115-21119"]},
+    // TVs → server: Jellyfin, RustDesk, Home Assistant, Immich, music, books.
+    {"action": "accept", "src": ["tag:vidar-tv"],
+     "dst": ["tag:vidar-server:8096,21115-21119,8123,2283,4533,13378"]},
+    // TVs → internet through an exit node (Mullvad or your home server).
+    {"action": "accept", "src": ["tag:vidar-tv"], "dst": ["autogroup:internet:*"]},
+    // No rule lets a TV reach another TV.
+  ],
+  // Lets tagged TVs use Mullvad exit nodes (needs the Mullvad add-on). Also disable key expiry
+  // for each TV under Machines → … → Disable key expiry, since they run unattended.
+  "nodeAttrs": [
+    {"target": ["tag:vidar-tv"], "attr": ["mullvad"]},
+  ],
+}

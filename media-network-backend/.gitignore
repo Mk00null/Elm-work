@@ -1,0 +1,12 @@
+.env
+data/**/*
+!data/**/.gitkeep
+!data/**/
+
+inventory/fleet.db
+scripts/network/out/
+scripts/maintenance/*.log
+backups/
+data/**/*
+!data/**/.gitkeep
+__pycache__/

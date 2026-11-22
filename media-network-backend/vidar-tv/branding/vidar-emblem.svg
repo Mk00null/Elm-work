@@ -1,0 +1,31 @@
+<!-- Vidar emblem — original geometric mecha crest (V-fin, visor, magenta eyes).
+     Inspired by the palette/mood only; not a trace of any existing design. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="armor" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8E96E0"/><stop offset=".55" stop-color="#5E66BC"/><stop offset="1" stop-color="#3A4192"/>
+    </linearGradient>
+    <linearGradient id="frame" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3A3C45"/><stop offset="1" stop-color="#16171C"/>
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-200%" width="200%" height="500%">
+      <feGaussianBlur stdDeviation="6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <!-- helmet frame -->
+  <path d="M256 150 L350 190 L372 290 L330 380 L256 430 L182 380 L140 290 L162 190 Z" fill="url(#frame)" stroke="#0B0C10" stroke-width="8" stroke-linejoin="round"/>
+  <!-- side vents -->
+  <g fill="#0B0C10"><path d="M170 250 l26 8 -4 14 -26 -8z"/><path d="M164 282 l28 8 -4 14 -28 -8z"/>
+    <path d="M342 250 l-26 8 4 14 26 -8z"/><path d="M348 282 l-28 8 4 14 28 -8z"/></g>
+  <!-- V-fin wings -->
+  <path d="M256 250 L60 70 L92 62 L272 218 Z" fill="url(#armor)" stroke="#0B0C10" stroke-width="8" stroke-linejoin="round"/>
+  <path d="M256 250 L452 70 L420 62 L240 218 Z" fill="url(#armor)" stroke="#0B0C10" stroke-width="8" stroke-linejoin="round"/>
+  <!-- center crest -->
+  <path d="M256 40 L286 120 L282 300 L256 330 L230 300 L226 120 Z" fill="url(#armor)" stroke="#0B0C10" stroke-width="8" stroke-linejoin="round"/>
+  <rect x="240" y="190" width="32" height="44" rx="5" fill="#2C2E36" stroke="#0B0C10" stroke-width="5"/>
+  <!-- visor + magenta eyes -->
+  <path d="M196 318 L246 330 L246 344 L200 334 Z" fill="#F070E0" filter="url(#glow)"/>
+  <path d="M316 318 L266 330 L266 344 L312 334 Z" fill="#F070E0" filter="url(#glow)"/>
+  <!-- chin -->
+  <path d="M238 370 L256 420 L274 370 Z" fill="#3A4192" stroke="#0B0C10" stroke-width="6" stroke-linejoin="round"/>
+</svg>

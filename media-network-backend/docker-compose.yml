@@ -1,0 +1,311 @@
+# =============================================================================
+# media-network-backend — RustDesk (self-hosted) + Jellyfin
+#
+# Usage:  cp .env.example .env && docker compose up -d
+#
+# RustDesk port map (official upstream layout):
+#   hbbs  21115/tcp  NAT type test
+#         21116/tcp  TCP hole punching / connection service
+#         21116/udp  ID registration + heartbeat
+#         21118/tcp  web client support (optional)
+#   hbbr  21117/tcp  relay
+#         21119/tcp  web client relay (optional)
+# =============================================================================
+name: media-network
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  # ---------------------------------------------------------------------------
+  # RustDesk signal / ID server
+  # ---------------------------------------------------------------------------
+  hbbs:
+    image: rustdesk/rustdesk-server:latest
+    container_name: hbbs
+    command: hbbs -r ${RUSTDESK_RELAY_HOST:-hbbr}:21117
+    ports:
+      - "${BIND_IP:-0.0.0.0}:21115:21115/tcp"
+      - "${BIND_IP:-0.0.0.0}:21116:21116/tcp"
+      - "${BIND_IP:-0.0.0.0}:21116:21116/udp"
+      - "${BIND_IP:-0.0.0.0}:21118:21118/tcp"
+    volumes:
+      # Persists db_v2.sqlite3 and the id_ed25519 / id_ed25519.pub key pair.
+      # Shared with hbbr so both use the same key.
+      - ./data/rustdesk:/root
+    environment:
+      TZ: ${TZ:-UTC}
+    depends_on:
+      - hbbr
+    restart: unless-stopped
+    logging: *default-logging
+    networks: [backend]
+
+  # ---------------------------------------------------------------------------
+  # RustDesk relay server
+  # ---------------------------------------------------------------------------
+  hbbr:
+    image: rustdesk/rustdesk-server:latest
+    container_name: hbbr
+    command: hbbr
+    ports:
+      - "${BIND_IP:-0.0.0.0}:21117:21117/tcp"
+      - "${BIND_IP:-0.0.0.0}:21119:21119/tcp"
+    volumes:
+      - ./data/rustdesk:/root
+    environment:
+      TZ: ${TZ:-UTC}
+    restart: unless-stopped
+    logging: *default-logging
+    networks: [backend]
+
+  # ---------------------------------------------------------------------------
+  # Jellyfin media server
+  # ---------------------------------------------------------------------------
+  jellyfin:
+    image: jellyfin/jellyfin:latest
+    container_name: jellyfin
+    user: "${PUID:-1000}:${PGID:-1000}"
+    ports:
+      - "${BIND_IP:-0.0.0.0}:8096:8096/tcp"     # HTTP web UI / API
+      - "${BIND_IP:-0.0.0.0}:7359:7359/udp"     # LAN client auto-discovery
+    volumes:
+      - ./data/jellyfin/config:/config
+      - ./data/jellyfin/cache:/cache
+      - ${MEDIA_PATH:-./data/media}:/media:ro   # read-only: Jellyfin never writes media
+    environment:
+      TZ: ${TZ:-UTC}
+      # Advertised URL when reached through the Cloudflare tunnel
+      JELLYFIN_PublishedServerUrl: https://jelly.example.com
+    # Uncomment for Intel/AMD hardware transcoding:
+    # devices:
+    #   - /dev/dri:/dev/dri
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8096/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+    logging: *default-logging
+    networks: [backend]
+
+  # ===========================================================================
+  # Optional apps — start with:  docker compose --profile apps up -d
+  # ===========================================================================
+  uptime-kuma:            # phone alerts when a TV or service goes down
+    image: louislam/uptime-kuma:1
+    container_name: uptime-kuma
+    profiles: [apps]
+    ports: ["${BIND_IP:-0.0.0.0}:3001:3001"]
+    volumes: ["./data/uptime-kuma:/app/data"]
+    restart: unless-stopped
+    logging: *default-logging
+    networks: [backend]
+
+  jellyseerr:             # family request page for titles to add
+    image: fallenbagel/jellyseerr:latest
+    container_name: jellyseerr
+    profiles: [apps]
+    ports: ["${BIND_IP:-0.0.0.0}:5055:5055"]
+    environment: { TZ: "${TZ:-UTC}", LOG_LEVEL: info }
+    volumes: ["./data/jellyseerr:/app/config"]
+    restart: unless-stopped
+    logging: *default-logging
+    networks: [backend]
+
+  bazarr:                 # Spanish / English subtitles for your library
+    image: lscr.io/linuxserver/bazarr:latest
+    container_name: bazarr
+    profiles: [apps]
+    ports: ["${BIND_IP:-0.0.0.0}:6767:6767"]
+    environment: { TZ: "${TZ:-UTC}", PUID: "${PUID:-1000}", PGID: "${PGID:-1000}" }
+    volumes:
+      - ./data/bazarr:/config
+      - ${MEDIA_PATH:-./data/media}:/media
+    restart: unless-stopped
+    logging: *default-logging
+    networks: [backend]
+
+  tdarr:                  # re-encode your own files to HEVC to save space/upload
+    image: ghcr.io/haveagitgat/tdarr:latest
+    container_name: tdarr
+    profiles: [apps]
+    ports: ["${BIND_IP:-0.0.0.0}:8265:8265", "${BIND_IP:-0.0.0.0}:8266:8266"]
+    environment:
+      TZ: "${TZ:-UTC}"
+      PUID: "${PUID:-1000}"
+      PGID: "${PGID:-1000}"
+      serverIP: 0.0.0.0
+      serverPort: "8266"
+      webUIPort: "8265"
+      internalNode: "true"
+      nodeName: vidar-node
+    volumes:
+      - ./data/tdarr/server:/app/server
+      - ./data/tdarr/configs:/app/configs
+      - ./data/tdarr/logs:/app/logs
+      - ./data/tdarr/cache:/temp
+      - ${MEDIA_PATH:-./data/media}:/media
+    restart: unless-stopped
+    logging: *default-logging
+    networks: [backend]
+
+  homeassistant:          # power, apps and scenes for every TV; voice control
+    image: ghcr.io/home-assistant/home-assistant:stable
+    container_name: homeassistant
+    profiles: [apps]
+    ports: ["${BIND_IP:-0.0.0.0}:8123:8123"]
+    environment: { TZ: "${TZ:-UTC}" }
+    volumes: ["./data/homeassistant:/config"]
+    restart: unless-stopped
+    logging: *default-logging
+    networks: [backend]
+
+  dashboard:              # Vidar control panel (dashboard/)
+    build: ./dashboard
+    container_name: vidar-dashboard
+    profiles: [apps]
+    ports: ["${BIND_IP:-0.0.0.0}:8080:8080"]
+    environment:
+      VIDAR_DB: /data/inventory/fleet.db
+      VIDAR_HEALTH_LOG: /data/maintenance/fleet_health.log
+      VIDAR_DEVICES_CONF: /data/maintenance/devices.conf
+      JELLYFIN_URL: "${JELLYFIN_URL:-http://host.docker.internal:8096}"
+      JELLYFIN_API_KEY: "${JELLYFIN_API_KEY:-}"
+      DASHBOARD_TOKEN: "${DASHBOARD_TOKEN:-}"
+      TAILSCALE_API_KEY: "${TAILSCALE_API_KEY:-}"
+      TAILSCALE_TAILNET: "${TAILSCALE_TAILNET:--}"
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    volumes:
+      - ./inventory:/data/inventory
+      - ./scripts/maintenance:/data/maintenance
+    restart: unless-stopped
+    logging: *default-logging
+    networks: [backend]
+
+  ollama:                 # Linux servers only; on Windows install Ollama natively
+    image: ollama/ollama:latest
+    container_name: ollama
+    profiles: [ai]
+    ports: ["127.0.0.1:11434:11434"]
+    volumes: ["./data/ollama:/root/.ollama"]
+    restart: unless-stopped
+    logging: *default-logging
+    networks: [backend]
+
+  vaultwarden:            # self-hosted Bitwarden for RustDesk/router/Jellyfin passwords (open via Tailscale only)
+    image: vaultwarden/server:latest
+    container_name: vaultwarden
+    profiles: [apps]
+    ports: ["127.0.0.1:8222:80"]
+    environment:
+      SIGNUPS_ALLOWED: "false"
+      ADMIN_TOKEN: "${VAULTWARDEN_ADMIN_TOKEN:-}"
+      DOMAIN: "${VAULTWARDEN_DOMAIN:-http://localhost:8222}"
+    volumes: ["./data/vaultwarden:/data"]
+    restart: unless-stopped
+    logging: *default-logging
+    networks: [backend]
+
+  wud:                    # What's Up Docker: update notices (and Sunday auto-update for safe images)
+    image: getwud/wud:latest
+    container_name: wud
+    profiles: [apps]
+    ports: ["127.0.0.1:3010:3000"]
+    environment:
+      WUD_WATCHER_LOCAL_CRON: "0 4 * * 0"
+      WUD_TRIGGER_DOCKER_LOCAL_PRUNE: "true"
+      WUD_TRIGGER_TELEGRAM_BOT_TOKEN: "${TELEGRAM_BOT_TOKEN:-}"
+      WUD_TRIGGER_TELEGRAM_BOT_CHATID: "${TELEGRAM_ALLOWED_IDS:-}"
+    volumes: ["/var/run/docker.sock:/var/run/docker.sock"]
+    restart: unless-stopped
+    logging: *default-logging
+    networks: [backend]
+
+  # ===========================================================================
+  # Media extras — start with:  docker compose --profile media up -d
+  # ===========================================================================
+  navidrome:              # your music (Subsonic API: works with many TV/phone apps)
+    image: deluan/navidrome:latest
+    container_name: navidrome
+    profiles: [media]
+    ports: ["${BIND_IP:-0.0.0.0}:4533:4533"]
+    environment: { ND_SCANSCHEDULE: 1h, ND_LOGLEVEL: info }
+    volumes:
+      - ./data/navidrome:/data
+      - ${MUSIC_PATH:-./data/media/music}:/music:ro
+    restart: unless-stopped
+    logging: *default-logging
+    networks: [backend]
+
+  audiobookshelf:         # audiobooks and podcasts
+    image: ghcr.io/advplyr/audiobookshelf:latest
+    container_name: audiobookshelf
+    profiles: [media]
+    ports: ["${BIND_IP:-0.0.0.0}:13378:80"]
+    environment: { TZ: "${TZ:-UTC}" }
+    volumes:
+      - ./data/audiobookshelf/config:/config
+      - ./data/audiobookshelf/metadata:/metadata
+      - ${AUDIOBOOKS_PATH:-./data/media/audiobooks}:/audiobooks
+      - ${PODCASTS_PATH:-./data/media/podcasts}:/podcasts
+    restart: unless-stopped
+    logging: *default-logging
+    networks: [backend]
+
+  immich-server:          # family photos; TV app + slideshow screensaver
+    image: ghcr.io/immich-app/immich-server:release
+    container_name: immich-server
+    profiles: [media]
+    ports: ["${BIND_IP:-0.0.0.0}:2283:2283"]
+    environment:
+      DB_HOSTNAME: immich-db
+      DB_USERNAME: immich
+      DB_PASSWORD: "${IMMICH_DB_PASSWORD:-change-me}"
+      DB_DATABASE_NAME: immich
+      REDIS_HOSTNAME: immich-redis
+      TZ: "${TZ:-UTC}"
+    volumes:
+      - ${PHOTOS_PATH:-./data/media/photos}:/usr/src/app/upload
+    depends_on: [immich-redis, immich-db]
+    restart: unless-stopped
+    logging: *default-logging
+    networks: [backend]
+
+  immich-machine-learning:   # face/object search; remove to save ~1.5 GB RAM
+    image: ghcr.io/immich-app/immich-machine-learning:release
+    container_name: immich-ml
+    profiles: [media]
+    volumes: ["./data/immich/model-cache:/cache"]
+    restart: unless-stopped
+    logging: *default-logging
+    networks: [backend]
+
+  immich-redis:
+    image: docker.io/valkey/valkey:8-bookworm
+    container_name: immich-redis
+    profiles: [media]
+    restart: unless-stopped
+    networks: [backend]
+
+  immich-db:
+    image: ghcr.io/immich-app/postgres:14-vectorchord0.4.3-pgvectors0.2.0
+    container_name: immich-db
+    profiles: [media]
+    environment:
+      POSTGRES_USER: immich
+      POSTGRES_PASSWORD: "${IMMICH_DB_PASSWORD:-change-me}"
+      POSTGRES_DB: immich
+      POSTGRES_INITDB_ARGS: "--data-checksums"
+    volumes: ["./data/immich/postgres:/var/lib/postgresql/data"]
+    shm_size: 128mb
+    restart: unless-stopped
+    networks: [backend]
+
+networks:
+  backend:
+    driver: bridge

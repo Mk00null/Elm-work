@@ -1,0 +1,387 @@
+<title>Vidar Network</title>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+/* Minimal one-column site: hero → live TV demo → apps → build status → out of scope. Single dark look by design. */
+:root{color-scheme:dark;
+  --void:#0C0D11;--hull:#15161C;--plate:#1E2029;--seam:#2C2F3B;
+  --armor:#5E66BC;--armor-hi:#9AA0F0;--armor-lo:#3A4192;--eye:#F070E0;--tan:#B9B08E;--vent:#FF8A80;--ok:#7BD88F;
+  --ink:#E4E6EE;--ink-2:#AEB3C4;--ink-3:#7A8096;
+  --display:"Chakra Petch",ui-sans-serif,system-ui,sans-serif;--body:"IBM Plex Sans",ui-sans-serif,system-ui,sans-serif;--mono:"JetBrains Mono",ui-monospace,monospace}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important}}
+body{margin:0;background:var(--void);color:var(--ink);font:16px/1.6 var(--body);padding-inline:16px}
+:focus-visible{outline:3px solid var(--eye);outline-offset:3px}
+.wrap{max-width:1040px;margin-inline:auto}
+h1,h2{font-family:var(--display);margin:0;text-wrap:balance}
+h2{font-size:28px;font-weight:600}
+p{margin:0}
+.label{font:500 12px/1 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3)}
+section{padding-block:56px;border-top:1px solid var(--seam)}
+section>.wrap{display:grid;gap:20px}
+.lede{color:var(--ink-2);max-width:62ch}
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:color-mix(in srgb,var(--void) 90%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--seam);margin-inline:-16px;padding:12px 16px}
+header.top .wrap{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px;font:700 17px/1 var(--display);letter-spacing:.28em;color:var(--armor-hi);text-decoration:none}
+.brand img{width:32px;height:32px;object-fit:contain}
+header nav{margin-left:auto;display:flex;gap:4px;flex-wrap:wrap}
+header nav a{color:var(--ink-2);text-decoration:none;font-size:14px;padding:6px 10px;border-radius:6px}
+header nav a:hover{background:var(--plate);color:var(--ink)}
+.hero{padding-block:48px 40px;display:flex;align-items:center;gap:32px;flex-wrap:wrap}
+.hero>div{flex:1 1 380px;min-width:0;display:grid;gap:14px}
+.hero h1{font-size:clamp(40px,6.5vw,68px);line-height:1;font-weight:700}
+.hero h1 span{color:var(--armor-hi)}
+.hero img{width:min(260px,70vw);filter:drop-shadow(0 0 28px color-mix(in srgb,var(--eye) 30%,transparent))}
+/* ===== live TV demo ===== */
+.tv-frame{background:#050608;border:1px solid var(--seam);border-radius:18px;padding:14px;box-shadow:0 30px 80px -30px #000}
+.tv{position:relative;aspect-ratio:16/9;width:100%;max-width:100%;overflow:hidden;border-radius:8px;background:var(--void);container-type:inline-size;user-select:none}
+.tv::before{content:"";position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(55% 45% at 80% 35%,color-mix(in srgb,var(--armor-lo) 55%,transparent),transparent 70%),
+  radial-gradient(1px 1px at 12% 18%,#fff9,transparent),radial-gradient(1px 1px at 36% 70%,#fff6,transparent),
+  radial-gradient(1px 1px at 61% 12%,#fff8,transparent),radial-gradient(1px 1px at 88% 66%,#fff6,transparent),radial-gradient(1px 1px at 24% 46%,#fff5,transparent)}
+.tv-in{position:absolute;inset:0;padding:3.4cqw 6cqw;display:flex;flex-direction:column;gap:2.4cqw}
+.tv-top{display:flex;align-items:center;gap:1.2cqw}
+.tv-av{width:3.4cqw;height:3.4cqw;border-radius:50%;background:linear-gradient(135deg,var(--armor-lo),var(--eye));flex:none}
+.tv-tab{font-size:1.5cqw;padding:.6cqw 1.5cqw;border-radius:.6cqw;color:var(--ink);white-space:nowrap}
+.tv-tab.on{background:var(--armor-hi);color:#1A1C5C;font-weight:600}
+.tv-brand{margin-left:auto;display:flex;align-items:center;gap:.8cqw;font:700 1.6cqw/1 var(--display);letter-spacing:.3em;color:var(--armor-hi)}
+.tv-brand img{width:4.4cqw;height:4.4cqw;object-fit:contain}
+.f{outline:none}
+.f.focus{box-shadow:0 0 0 .35cqw var(--void),0 0 0 .7cqw var(--armor-hi);transform:scale(1.04);transition:transform .15s,box-shadow .15s}
+.tv-tab.f.focus{transform:none}
+.tv-screen{flex:1;min-height:0;display:flex;flex-direction:column;gap:2cqw}
+.tv-hero{flex:1;min-height:0;border-radius:1cqw;position:relative;overflow:hidden;border:1px solid #ffffff14;
+  background:linear-gradient(90deg,#0C0D11f2 0%,#0C0D1188 45%,transparent 75%),linear-gradient(135deg,var(--plate),#262a66 65%,var(--void))}
+.tv-hero img{position:absolute;right:5cqw;top:50%;transform:translateY(-50%);height:88%;filter:drop-shadow(0 0 3cqw #3A4192aa)}
+.tv-hero .t{position:absolute;left:4cqw;bottom:3.4cqw;display:grid;gap:.9cqw}
+.tv-badge{justify-self:start;font:600 1cqw/1 var(--body);background:var(--tan);color:var(--void);padding:.5cqw .8cqw;border-radius:.4cqw}
+.tv-hero h4{margin:0;font:600 4.4cqw/1 var(--display)}
+.tv-hero p{font-size:1.4cqw;color:var(--ink-2)}
+.tv-btns{display:flex;gap:1cqw}
+.tv-btn{font-size:1.3cqw;padding:.8cqw 1.8cqw;border-radius:3cqw;background:var(--plate);border:1px solid var(--seam)}
+.tv-btn.f.focus{background:var(--armor-hi);color:#1A1C5C;font-weight:600;transform:none}
+.tv-row-h{font:500 1.6cqw/1 var(--body);display:flex;gap:1cqw;align-items:center}
+.tv-row-h i{font:600 1cqw/1 var(--mono);color:var(--eye);font-style:normal;letter-spacing:.1em}
+.tv-row{display:flex;gap:1.6cqw}
+.tv-card{flex:1;aspect-ratio:16/9;border-radius:.7cqw;position:relative;overflow:hidden;border:1px solid #ffffff12;min-width:0}
+.tv-card b{position:absolute;left:.9cqw;bottom:.8cqw;font-size:1.05cqw;font-weight:600;text-shadow:0 1px 3px #000}
+.tv-card .pb{position:absolute;left:0;bottom:0;height:.35cqw;background:var(--armor-hi)}
+.tv-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1.6cqw}
+.tv-cat{aspect-ratio:2.2;border-radius:.8cqw;display:grid;place-items:center;font:500 1.6cqw/1 var(--body);border:1px solid #ffffff12}
+.tv-guide{display:grid;grid-template-columns:14cqw 1fr;gap:.6cqw;font-size:1.15cqw}
+.tv-ch{background:var(--plate);border-radius:.5cqw;padding:.9cqw 1cqw;display:flex;gap:.8cqw;align-items:center}
+.tv-ch em{font:600 .9cqw/1 var(--mono);color:var(--ink-3);font-style:normal}
+.tv-prog{display:flex;gap:.6cqw}
+.tv-prog div{background:var(--hull);border:1px solid var(--seam);border-radius:.5cqw;padding:.9cqw 1cqw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tv-prog .now{border-color:var(--armor);background:color-mix(in srgb,var(--armor-lo) 40%,var(--hull))}
+.tv-apps{display:grid;grid-template-columns:repeat(5,1fr);gap:1.6cqw}
+.tv-app{aspect-ratio:1.5;border-radius:1cqw;display:grid;place-items:center;align-content:center;gap:.6cqw;font:600 1.4cqw/1 var(--body);background:var(--plate);border:1px solid var(--seam);text-align:center}
+.tv-app small{font:400 .95cqw/1.2 var(--body);color:var(--ink-3)}
+.tv-app .dot{width:4cqw;height:4cqw;border-radius:1cqw}
+.tv-toast{position:absolute;left:50%;bottom:3cqw;transform:translateX(-50%);background:var(--plate);border:1px solid var(--armor);padding:1cqw 2cqw;border-radius:1cqw;font-size:1.3cqw;opacity:0;transition:opacity .2s;pointer-events:none}
+.tv-toast.show{opacity:1}
+.remote{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-top:14px}
+.dpad{display:grid;grid-template-columns:repeat(3,44px);grid-template-rows:repeat(3,44px);gap:4px}
+.dpad button,.rbtn{background:var(--plate);color:var(--ink);border:1px solid var(--seam);border-radius:10px;font:600 15px var(--body);cursor:pointer}
+.dpad button:hover,.rbtn:hover{border-color:var(--armor)}
+.dpad .ok{background:var(--armor-lo);border-color:var(--armor)}
+.rbtn{padding:10px 14px}
+.hint{font-size:13px;color:var(--ink-3)}
+.hint kbd{font:500 12px var(--mono);background:var(--plate);border:1px solid var(--seam);border-radius:4px;padding:1px 6px;color:var(--ink-2)}
+
+.list{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:0 28px}
+.list h3{grid-column:1/-1;font:600 13px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--armor-hi);margin:22px 0 6px}
+.list h3:first-child{margin-top:0}
+.item{display:grid;grid-template-columns:1fr auto;gap:2px 12px;padding:10px 0;border-bottom:1px solid var(--seam);min-width:0}
+.item b{font-weight:600}
+.item span{grid-column:1;color:var(--ink-3);font-size:14px;min-width:0}
+.item i{grid-column:2;grid-row:1;align-self:center;font:500 11px var(--mono);font-style:normal;color:var(--ok);white-space:nowrap}
+.item i.you{color:var(--tan)}
+.steps{display:grid;gap:10px;counter-reset:s;margin:0;padding:0;list-style:none}
+.steps li{display:grid;grid-template-columns:28px 1fr;gap:12px;align-items:baseline;color:var(--ink-2)}
+.steps li::before{counter-increment:s;content:counter(s);font:600 13px var(--mono);color:var(--armor-hi)}
+.steps b{color:var(--ink);font-weight:600}
+.tbl{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:560px;font-size:15px}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--seam);vertical-align:top}
+th{font:500 12px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)}
+td:first-child{color:var(--vent);font-weight:600;white-space:nowrap}
+td:last-child{color:var(--ink-2)}
+
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:24px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 16px;font-size:15px}
+.kv dt{color:var(--ink-3);font:500 13px var(--mono)}
+.kv dd{margin:0;color:var(--ink-2)}
+code,.mono{font:500 13px var(--mono)}
+code{background:var(--plate);border:1px solid var(--seam);border-radius:4px;padding:1px 5px;color:var(--ink)}
+.tech h3{font:600 13px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--armor-hi);margin:8px 0 4px}
+table.t td:first-child{color:var(--ink);font-weight:500;white-space:nowrap}
+table.t td.n{font-family:var(--mono);font-size:13px;color:var(--armor-hi);white-space:nowrap}
+.diagram{overflow-x:auto;background:var(--hull);border:1px solid var(--seam);border-radius:12px;padding:16px}
+.diagram svg{display:block;min-width:720px;width:100%;height:auto}
+pre.cmd{margin:0;background:var(--hull);border:1px solid var(--seam);border-radius:10px;padding:14px;overflow-x:auto;font:500 13px/1.7 var(--mono);color:var(--ink-2)}
+pre.cmd b{color:var(--armor-hi);font-weight:500}
+footer{padding-block:32px;color:var(--ink-3);font-size:13px;border-top:1px solid var(--seam)}
+</style>
+
+<header class="top"><div class="wrap">
+  <a class="brand" href="#top"><img class="logo" src="__LOGO__" alt="">VIDAR</a>
+  <nav aria-label="Sections"><a href="#demo">Demo</a><a href="#apps">Apps</a><a href="#arch">Architecture</a><a href="#tech">Tech</a><a href="#status">Setup</a><a href="#cant">Out of scope</a></nav>
+</div></header>
+
+<main id="top">
+<div class="wrap hero">
+  <div>
+    <div class="label">Private home media network</div>
+    <h1>Seven screens.<br><span>One brain.</span></h1>
+    <p class="lede">Your library, local and free live TV, photos and music on 7 TVs across 5 places, run from one HP OmniDesk. Every box boots into Vidar, maintains itself, and reports to your phone.</p>
+  </div>
+  <img class="logo" src="__LOGO__" alt="Vidar emblem">
+</div>
+
+<section id="demo"><div class="wrap">
+  <h2>Vidar TV</h2>
+  <p class="lede">Click the screen, then use the arrow keys and Enter, or the remote.</p>
+  <div class="tv-frame">
+    <div class="tv" id="tv" tabindex="0" aria-label="Vidar TV interactive demo">
+      <div class="tv-in"><div class="tv-top" id="tabs"></div><div class="tv-screen" id="screen"></div></div>
+      <div class="tv-toast" id="toast"></div>
+    </div>
+    <div class="remote">
+      <div class="dpad" aria-label="Remote">
+        <span></span><button data-k="ArrowUp" aria-label="Up">▲</button><span></span>
+        <button data-k="ArrowLeft" aria-label="Left">◀</button><button class="ok" data-k="Enter">OK</button><button data-k="ArrowRight" aria-label="Right">▶</button>
+        <span></span><button data-k="ArrowDown" aria-label="Down">▼</button><span></span>
+      </div>
+      <div style="display:flex;gap:8px"><button class="rbtn" data-k="Backspace">⟲ Back</button><button class="rbtn" data-k="Home">⌂ Home</button></div>
+    </div>
+  </div>
+</div></section>
+
+<section id="apps"><div class="wrap">
+  <h2>Everything on the box</h2>
+  <div class="list" id="apps-list"></div>
+</div></section>
+
+
+<section id="arch"><div class="wrap">
+  <h2>Architecture</h2>
+  <p class="lede">TVs and the server share a private Tailscale network. Each TV's internet goes out through Mullvad. Only the Jellyfin web page is public, behind a Cloudflare login.</p>
+  <div class="diagram">
+    <svg viewBox="0 0 960 380" role="img" aria-label="Server at home linked over Tailscale to five locations; Mullvad for TV internet; Cloudflare for phones">
+      <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#5E66BC"/></marker></defs>
+      <rect x="330" y="16" width="300" height="128" rx="12" fill="#1E2029" stroke="#5E66BC" stroke-width="2"/>
+      <text x="480" y="44" text-anchor="middle" fill="#9AA0F0" font-size="15" font-weight="600" font-family="IBM Plex Sans,sans-serif">HP OmniDesk · home</text>
+      <text x="480" y="68" text-anchor="middle" fill="#AEB3C4" font-size="12.5" font-family="IBM Plex Sans,sans-serif">Jellyfin · RustDesk · Dashboard · Ollama bot</text>
+      <text x="480" y="88" text-anchor="middle" fill="#AEB3C4" font-size="12.5" font-family="IBM Plex Sans,sans-serif">Immich · Navidrome · Home Assistant · Vaultwarden</text>
+      <text x="480" y="108" text-anchor="middle" fill="#AEB3C4" font-size="12.5" font-family="IBM Plex Sans,sans-serif">HDHomeRun antenna · backups · maintenance</text>
+      <text x="480" y="130" text-anchor="middle" fill="#7A8096" font-size="11.5" font-family="JetBrains Mono,monospace">100.64.0.1 · Ryzen 5 8500G · 16 GB</text>
+      <rect x="724" y="30" width="206" height="100" rx="12" fill="#15161C" stroke="#B9B08E" stroke-dasharray="5 4"/>
+      <text x="827" y="62" text-anchor="middle" fill="#B9B08E" font-size="14" font-weight="600" font-family="IBM Plex Sans,sans-serif">Cloudflare</text>
+      <text x="827" y="84" text-anchor="middle" fill="#AEB3C4" font-size="12" font-family="IBM Plex Sans,sans-serif">jelly.domain · email login</text>
+      <text x="827" y="104" text-anchor="middle" fill="#AEB3C4" font-size="12" font-family="IBM Plex Sans,sans-serif">phones · browsers</text>
+      <line x1="630" y1="80" x2="720" y2="80" stroke="#B9B08E" stroke-width="2" marker-end="url(#ar)"/>
+      <rect x="30" y="30" width="206" height="100" rx="12" fill="#15161C" stroke="#F070E0" stroke-dasharray="5 4"/>
+      <text x="133" y="62" text-anchor="middle" fill="#F070E0" font-size="14" font-weight="600" font-family="IBM Plex Sans,sans-serif">Mullvad exit nodes</text>
+      <text x="133" y="84" text-anchor="middle" fill="#AEB3C4" font-size="12" font-family="IBM Plex Sans,sans-serif">TV internet traffic</text>
+      <text x="133" y="104" text-anchor="middle" fill="#AEB3C4" font-size="12" font-family="IBM Plex Sans,sans-serif">no-log VPN</text>
+      <text x="480" y="196" text-anchor="middle" fill="#9AA0F0" font-size="13" font-weight="600" font-family="IBM Plex Sans,sans-serif">Tailscale mesh · encrypted · no open ports</text>
+      <g id="sitesvg"></g>
+    </svg>
+  </div>
+</div></section>
+
+<section id="tech" class="tech"><div class="wrap">
+  <h2>Tech reference</h2>
+  <div class="grid2">
+    <div>
+      <h3>Server</h3>
+      <dl class="kv">
+        <dt>Machine</dt><dd>HP OmniDesk M02-0310, Windows 11 Home</dd>
+        <dt>CPU / GPU</dt><dd>Ryzen 5 8500G (6 cores) · Radeon 740M (AMD AMF encode)</dd>
+        <dt>RAM</dt><dd>16 GB DDR5, two matched sticks (8 GB minimum)</dd>
+        <dt>Storage</dt><dd>512 GB NVMe for Windows · 4–8 TB drive for media</dd>
+        <dt>Runtime</dt><dd>Docker Desktop (WSL2), Jellyfin native, Python 3.12</dd>
+        <dt>Addresses</dt><dd>LAN 192.168.1.50 (DHCP reservation) · Tailscale 100.64.0.1</dd>
+        <dt>Power</dt><dd>Sleep off, power-on after outage, UPS shutdown at 30%</dd>
+      </dl>
+    </div>
+    <div>
+      <h3>TV boxes</h3>
+      <dl class="kv">
+        <dt>Onn 4K Pro</dt><dd>S905X5M, 3 GB RAM, 32 GB, Wi-Fi 6, 100 Mb Ethernet</dd>
+        <dt>RockTek G2</dt><dd>S905X4-K, 4 GB RAM, 64 GB, Wi-Fi 6, Gigabit, Dolby Vision</dd>
+        <dt>OS</dt><dd>Google TV, network debugging on, ADB port 5555</dd>
+        <dt>Network</dt><dd>Location guest Wi-Fi · Tailscale 100.64.0.x · Mullvad exit</dd>
+        <dt>DNS</dt><dd>NextDNS Private DNS (kids profile on kids TVs)</dd>
+        <dt>Home app</dt><dd>Vidar TV <code>com.vidar.tv</code> · fallback Projectivy</dd>
+        <dt>Bandwidth</dt><dd>4K HEVC 20–30 Mbps · remote cap ≈12 Mbps per location</dd>
+      </dl>
+    </div>
+  </div>
+
+  <h3>Services and ports</h3>
+  <div class="tbl"><table class="t">
+    <thead><tr><th>Service</th><th>Port</th><th>Runs as</th><th>Reach it from</th></tr></thead>
+    <tbody id="ports"></tbody>
+  </table></div>
+
+  <h3>Schedules</h3>
+  <div class="tbl"><table class="t">
+    <thead><tr><th>Job</th><th>When</th><th>Script</th></tr></thead>
+    <tbody>
+      <tr><td>TV maintenance</td><td class="n">Tue · Fri 04:00</td><td><code>scripts/maintenance/android-maintenance-fleet.sh</code></td></tr>
+      <tr><td>Health check</td><td class="n">every 15 min</td><td><code>scripts/maintenance/fleet_health.py</code></td></tr>
+      <tr><td>Backup (encrypted)</td><td class="n">daily 03:00</td><td><code>scripts/backup/vidar_backup.py</code></td></tr>
+      <tr><td>Container updates</td><td class="n">Sun 04:00</td><td>What’s Up Docker</td></tr>
+      <tr><td>Bot summary / report</td><td class="n">daily 09:00 · Sun 10:00</td><td><code>bot/vidar_bot.py</code></td></tr>
+      <tr><td>UPS watch</td><td class="n">every 2 min</td><td><code>windows/ups-shutdown.ps1</code></td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Accounts and keys (.env)</h3>
+  <div class="tbl"><table class="t">
+    <thead><tr><th>Account</th><th>Used for</th><th>Setting</th></tr></thead>
+    <tbody>
+      <tr><td>Tailscale + Mullvad add-on</td><td>Private network, TV VPN, lockdown</td><td><code>TAILSCALE_API_KEY</code></td></tr>
+      <tr><td>Cloudflare</td><td>Domain, tunnel, login wall</td><td><code>CLOUDFLARE_API_TOKEN</code> <code>ACCESS_ALLOWED_EMAILS</code></td></tr>
+      <tr><td>NextDNS</td><td>DNS filtering, kids profile</td><td><code>NEXTDNS_PROFILE_ID</code> <code>NEXTDNS_API_KEY</code></td></tr>
+      <tr><td>Jellyfin</td><td>Dashboard streams, setup script</td><td><code>JELLYFIN_API_KEY</code></td></tr>
+      <tr><td>Telegram</td><td>Vidar Assistant</td><td><code>TELEGRAM_BOT_TOKEN</code> <code>TELEGRAM_ALLOWED_IDS</code></td></tr>
+      <tr><td>Backblaze B2 (optional)</td><td>Off-site backup copy</td><td><code>RCLONE_REMOTE</code> <code>BACKUP_AGE_RECIPIENT</code></td></tr>
+      <tr><td>Dashboard</td><td>Password for actions</td><td><code>DASHBOARD_TOKEN</code></td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Key commands</h3>
+<pre class="cmd"><b># server</b>
+.\windows\install-server.ps1
+.\windows\setup-tunnels.ps1 -Domain yours.com
+python scripts\jellyfin\setup-jellyfin.py --hdhomerun auto --fast us --kids Kids
+python scripts\security\cloudflare-access.py --domain yours.com
+.\windows\check-services.ps1
+<b># each TV</b>
+python scripts/provision/provision-tv.py --ip 100.64.0.11 --device-id APT-LIVING --model "RockTek G2" --location apartment
+python scripts/provision/provision-tv.py --ip 100.64.0.11 --device-id APT-LIVING --model "RockTek G2" --location apartment --check-vpn
+<b># fleet</b>
+python inventory/fleet_db.py --list
+python scripts/maintenance/fleet_health.py
+docker compose --profile apps --profile media up -d</pre>
+</div></section>
+
+<section id="status"><div class="wrap">
+  <h2>Setup</h2>
+  <p class="lede">All code is written and in the repo. These are the steps on your hardware.</p>
+  <ol class="steps">
+    <li><span><b>Buy:</b> 16 GB RAM, a 4–8 TB drive, one test Onn 4K Pro, optional HDHomeRun + antenna and UPS.</span></li>
+    <li><span><b>Server:</b> run <code>windows\install-server.ps1</code>, set up Jellyfin, then <code>setup-jellyfin.py</code> for live TV and plugins.</span></li>
+    <li><span><b>Tunnel:</b> <code>setup-tunnels.ps1 -Domain yours.com</code> for jelly.yours.com behind a login.</span></li>
+    <li><span><b>Each TV:</b> network debugging on, Tailscale, then <code>provision-tv.py</code>.</span></li>
+    <li><span><b>Phone:</b> Telegram bot token in <code>.env</code>; the dashboard is at port 8080.</span></li>
+    <li><span><b>Check:</b> <code>check-services.ps1</code> all green, then buy the other six boxes.</span></li>
+  </ol>
+</div></section>
+
+<section id="cant"><div class="wrap">
+  <h2>Out of scope</h2>
+  <p class="lede">Things you asked for that won't be built, and what Vidar does instead.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Asked for</th><th>Instead</th></tr></thead>
+    <tbody id="cant-list"></tbody>
+  </table></div>
+</div></section>
+</main>
+<footer><div class="wrap">Vidar · private project · Jellyfin, Jet Stream (Apache-2.0), Tailscale, RustDesk · source in Mk00null/Elm-work</div></footer>
+
+<script>
+const LOGO=document.querySelector('.logo').getAttribute('src');
+const APPS_LIST=[
+ ["On every TV",[
+  ["Vidar TV","home screen: library, live guide, search"],["Jellyfin","fallback player"],["TiviMate","live guide player"],
+  ["Stremio","legal add-ons, Trakt"],["RustDesk","remote control"],["Tailscale","private link to the server"],["Projectivy","backup launcher"]]],
+ ["Free TV & movies",[
+  ["Antenna (HDHomeRun)","local channels, NFL, Univision, DVR","you"],["Pluto · Samsung TV Plus · Plex","free channels in the Vidar guide"],
+  ["Tubi · Roku Channel · Xumo","free movies and channels"],["Kanopy · Hoopla","free films with a library card"],
+  ["ViX · Canela.TV","Spanish movies, novelas, Liga MX"],["Haystack News","local and world news"]]],
+ ["Photos, music, extras",[
+  ["Immich","family photos, TV slideshow"],["Navidrome","your music"],["Audiobookshelf","audiobooks, podcasts"],
+  ["Kodi","second player"],["Moonlight","stream PC games"],["Home Assistant","power, scenes, doorbell on TV"]]],
+ ["Privacy",[
+  ["Tailscale + Mullvad","every TV's traffic through a no-log VPN; server link stays up","you"],["Access rules","only the server can reach the TVs"],
+  ["Cloudflare login + rate limit","email code before Jellyfin's web page"],["Google TV cleanup","ad tracking and recommendations off"],
+  ["Encrypted backups","encrypted before leaving the house"],["Vaultwarden","your passwords on your server"],["Lockdown button","cut every TV off in one click"]]],
+ ["Server",[
+  ["Jellyfin","library, AMD transcoding, Intro Skipper, trickplay"],["Vidar Dashboard","fleet status and actions"],["Vidar Assistant","Telegram + local AI"],
+  ["Uptime Kuma","phone alerts"],["Jellyseerr","family requests"],["Bazarr · Tdarr","subtitles, smaller files"],
+  ["NextDNS","trackers, ads, kids profile"],["Backups","nightly + encrypted cloud"],["Maintenance","Tue/Fri 04:00 self-cleaning"],["Updates","What’s Up Docker, Sundays"],["UPS shutdown","clean stop on low battery","you"],["Weekly report","Sunday summary from the bot"]]]];
+const CANT=[
+ ["Thunder IPTV lines, PPV bouquets","Antenna locals + free channels; official DAZN / ESPN+ / PPV apps you subscribe to"],
+ ["Torrentio + TorBox","Your Jellyfin library in Vidar and Stremio; Kanopy, Hoopla, Tubi for free films"],
+ ["Sonarr / Radarr automation","Jellyseerr requests; Tdarr and Bazarr for files you own"],
+ ["Reselling, hidden payment memos","A private network for you and family"],
+ ["Stealth from ISPs and rights holders","Real privacy: Tailscale, Cloudflare login, NextDNS, no open ports"],
+ ["Gundam artwork in the shared build","Swappable logo; your flat logo stays on your own copies"],
+ ["Bitdefender VPN on the TVs","Mullvad exit nodes inside Tailscale (Android runs one VPN; Bitdefender would cut the server link)"]];
+const el=h=>{const t=document.createElement('template');t.innerHTML=h.trim();return t.content.firstChild};
+const L=document.getElementById('apps-list');
+APPS_LIST.forEach(([g,items])=>{L.append(el(`<h3>${g}</h3>`));items.forEach(a=>L.append(el(`<div class="item"><b>${a[0]}</b><span>${a[1]}</span><i class="${a[2]||''}">${a[2]?'BUY':'INCLUDED'}</i></div>`)))});
+
+const PORTS=[["Jellyfin","8096","Windows service","Tailscale · Cloudflare (web)"],["RustDesk ID / relay","21115–21119","Docker","Tailscale"],
+ ["Vidar Dashboard","8080","Docker","Tailscale"],["Ollama","11434","Windows app","server only"],["Home Assistant","8123","Docker","Tailscale"],
+ ["Immich","2283","Docker","Tailscale"],["Navidrome","4533","Docker","Tailscale"],["Audiobookshelf","13378","Docker","Tailscale"],
+ ["Jellyseerr","5055","Docker","Tailscale"],["Uptime Kuma","3001","Docker","Tailscale"],["Bazarr","6767","Docker","Tailscale"],["Tdarr","8265","Docker","Tailscale"],
+ ["Vaultwarden","8222","Docker","server only (localhost)"],["What’s Up Docker","3010","Docker","server only (localhost)"],["ADB on TVs","5555","each TV","server only (Tailscale rule)"]];
+PORTS.forEach(r=>document.getElementById('ports').append(el(`<tr><td>${r[0]}</td><td class="n">${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td></tr>`)));
+const SITES=[["Apartment",["RockTek G2","Onn 4K Pro"]],["Home",["RockTek G2","Onn 4K Pro"]],["Partner",["Onn 4K Pro"]],["Office",["Onn 4K Pro"]],["Second home",["RockTek G2"]]];
+(function(){const g=document.getElementById('sitesvg');const n=SITES.length,w=160,gap=(960-60-n*w)/(n-1);
+ SITES.forEach(([name,tvs],i)=>{const x=30+i*(w+gap),cx=x+w/2;
+  g.insertAdjacentHTML('beforeend',`<line x1="480" y1="144" x2="${cx}" y2="262" stroke="#5E66BC" stroke-width="2" marker-end="url(#ar)"/>
+  <rect x="${x}" y="266" width="${w}" height="92" rx="12" fill="#15161C" stroke="#2C2F3B"/>
+  <text x="${cx}" y="294" text-anchor="middle" fill="#E4E6EE" font-size="14" font-weight="600" font-family="IBM Plex Sans,sans-serif">${name}</text>
+  <text x="${cx}" y="317" text-anchor="middle" fill="#AEB3C4" font-size="12" font-family="IBM Plex Sans,sans-serif">${tvs.length} TV${tvs.length>1?'s':''}</text>
+  <text x="${cx}" y="338" text-anchor="middle" fill="#7A8096" font-size="11" font-family="IBM Plex Sans,sans-serif">${tvs.map(t=>t.split(' ')[0]).join(' · ')}</text>`)})})();
+CANT.forEach(c=>document.getElementById('cant-list').append(el(`<tr><td>${c[0]}</td><td>${c[1]}</td></tr>`)));
+/* ---------- TV demo ---------- */
+const TABS=["Home","Categories","Movies","Shows","Live","Favorites","Apps"];
+const G=["linear-gradient(135deg,#3A4192,#0C0D11)","linear-gradient(135deg,#7A1F70,#1E2029)","linear-gradient(135deg,#B9B08E,#2C2F3B)","linear-gradient(135deg,#262a66,#9AA0F0)","linear-gradient(135deg,#B3261E,#0C0D11)","linear-gradient(135deg,#2C2F3B,#5E66BC)"];
+const CONTENT={
+ Home:{hero:["NEW IN YOUR LIBRARY","Featured Title","Jellyfin · 2h 08m · 4K HDR · Español / English"],rows:[["Continue Watching","3 IN PROGRESS",["Family Movie Night","Series · S2 E4","Documentary","Películas","Live · Pluto TV"],[62,30,85,0,0]]]},
+ Movies:{hero:["4K HDR","Movie Night Pick","Your library · sorted by recently added"],rows:[["Recently Added","",["Action Pick","Comedy Pick","Drama Pick","Family Pick","Classic Pick"],[]]]},
+ Shows:{hero:["NEXT EPISODE","Your Series","Season 2 · Episode 5 · resume at 12:40"],rows:[["Up Next","",["Series A","Series B","Docuseries","Kids Show","Anime"],[40,0,10,0,0]]]},
+ Favorites:{hero:["FAVORITE","Saved for Later","Synced across all 7 TVs with your profile"],rows:[["Your Favorites","5 SAVED",["Favorite 1","Favorite 2","Favorite 3","Favorite 4","Favorite 5"],[]]]}};
+const CATS=["Action","Comedy","Documentaries","Películas en Español","Family","Horror","Sci-Fi","Music"];
+const CH=[["Antenna · CBS","Local News","NFL Sunday","60 Minutes"],["Antenna · Univision","Noticiero","Liga MX","Novela"],["Pluto · News","Morning News","Market Watch","World Report"],["Samsung · Movies","Classic Western","Crime Drama","Late Show"],["Plex · Kids","Cartoon Block","Science Hour","Story Time"],];
+const APPS=[["Vidar","Your library","linear-gradient(135deg,#9AA0F0,#3A4192)"],["Live TV","Antenna + free","linear-gradient(135deg,#B9B08E,#5E66BC)"],["Free Movies","Kanopy · Tubi","linear-gradient(135deg,#7A1F70,#3A4192)"],["Photos","Immich","linear-gradient(135deg,#5E66BC,#7A1F70)"],["Music","Navidrome","linear-gradient(135deg,#2C2F3B,#5E66BC)"]];
+
+let tab=0, zone='tabs', idx=0;
+const tabsEl=document.getElementById('tabs'),scr=document.getElementById('screen'),tv=document.getElementById('tv'),toast=document.getElementById('toast');
+function renderTabs(){tabsEl.innerHTML=`<div class="tv-av"></div>`+TABS.map((t,i)=>`<span class="tv-tab f ${i===tab?'on':''}" data-z="tabs" data-i="${i}">${t}</span>`).join('')+`<span class="tv-brand"><img src="${LOGO}" alt="">VIDAR</span>`}
+function renderScreen(){const t=TABS[tab];let h='';
+ if(CONTENT[t]){const c=CONTENT[t];h+=`<div class="tv-hero"><img src="${LOGO}" alt=""><div class="t"><span class="tv-badge">${c.hero[0]}</span><h4>${c.hero[1]}</h4><p>${c.hero[2]}</p><div class="tv-btns">${["▶ Play","More info","♡ Favorite"].map((b,i)=>`<span class="tv-btn f" data-z="btn" data-i="${i}">${b}</span>`).join('')}</div></div></div>`;
+  const r=c.rows[0];h+=`<div class="tv-row-h">${r[0]}${r[1]?`<i>● ${r[1]}</i>`:''}</div><div class="tv-row">${r[2].map((n,i)=>`<div class="tv-card f" data-z="row" data-i="${i}" style="background:${G[i%G.length]}"><b>${n}</b>${r[3][i]?`<div class="pb" style="width:${r[3][i]}%"></div>`:''}</div>`).join('')}</div>`}
+ else if(t==='Categories'){h=`<div class="tv-grid">${CATS.map((c,i)=>`<div class="tv-cat f" data-z="row" data-i="${i}" style="background:${G[i%G.length]}">${c}</div>`).join('')}</div>`}
+ else if(t==='Live'){h=`<div class="tv-row-h">Live guide <i>● ANTENNA + FREE CHANNELS</i></div><div class="tv-guide">${CH.map((c,i)=>`<div class="tv-ch f" data-z="row" data-i="${i}"><em>${String(i+1).padStart(2,'0')}</em>${c[0]}</div><div class="tv-prog"><div class="now" style="flex:2">▶ ${c[1]}</div><div style="flex:1.4">${c[2]}</div><div style="flex:1">${c[3]}</div></div>`).join('')}</div>`}
+ else if(t==='Apps'){h=`<div class="tv-row-h">Apps</div><div class="tv-apps">${APPS.map((a,i)=>`<div class="tv-app f" data-z="row" data-i="${i}"><div class="dot" style="background:${a[2]}"></div>${a[0]}<small>${a[1]}</small></div>`).join('')}</div>`}
+ scr.innerHTML=h;paint()}
+function items(z){return [...tv.querySelectorAll(`.f[data-z="${z}"]`)]}
+function paint(){tv.querySelectorAll('.f').forEach(e=>e.classList.remove('focus'));const it=items(zone);if(it.length){idx=Math.min(idx,it.length-1);it[idx].classList.add('focus')}}
+function zonesFor(){return CONTENT[TABS[tab]]?['tabs','btn','row']:['tabs','row']}
+function say(m){toast.textContent=m;toast.classList.add('show');clearTimeout(say.t);say.t=setTimeout(()=>toast.classList.remove('show'),1400)}
+function key(k){const z=zonesFor(),zi=z.indexOf(zone),it=items(zone);
+ const cols=TABS[tab]==='Categories'?4:1;
+ if(k==='ArrowRight'){if(zone==='tabs'){tab=Math.min(TABS.length-1,tab+1);idx=tab;renderTabs();renderScreen();return}idx=Math.min(it.length-1,idx+(TABS[tab]==='Live'?0:1))}
+ else if(k==='ArrowLeft'){if(zone==='tabs'){tab=Math.max(0,tab-1);idx=tab;renderTabs();renderScreen();return}idx=Math.max(0,idx-(TABS[tab]==='Live'?0:1))}
+ else if(k==='ArrowDown'){if(TABS[tab]==='Categories'&&zone==='row'&&idx+cols<it.length)idx+=cols;else if(TABS[tab]==='Live'&&zone==='row'&&idx<it.length-1)idx++;else if(zi<z.length-1){zone=z[zi+1];idx=0}}
+ else if(k==='ArrowUp'){if(TABS[tab]==='Categories'&&zone==='row'&&idx-cols>=0)idx-=cols;else if(TABS[tab]==='Live'&&zone==='row'&&idx>0)idx--;else if(zi>0){zone=z[zi-1];idx=zone==='tabs'?tab:0}}
+ else if(k==='Enter'){const e=it[idx];if(!e)return;if(zone==='tabs'){zone=z[1];idx=0;paint();return}say((zone==='btn'?'':'Opening ')+(e.querySelector('small')?e.firstChild.nextSibling.textContent:e.textContent).trim())}
+ else if(k==='Backspace'){zone='tabs';idx=tab}
+ else if(k==='Home'){tab=0;zone='tabs';idx=0;renderTabs();renderScreen();return}
+ paint()}
+tv.addEventListener('keydown',e=>{if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Enter','Backspace','Home'].includes(e.key)){e.preventDefault();key(e.key)}});
+tv.addEventListener('click',e=>{const f=e.target.closest('.f');tv.focus();if(!f)return;const z=f.dataset.z,i=+f.dataset.i;
+ if(z==='tabs'){tab=i;zone='tabs';idx=i;renderTabs();renderScreen();return}zone=z;idx=i;paint();key('Enter')});
+document.querySelectorAll('[data-k]').forEach(b=>b.addEventListener('click',()=>{key(b.dataset.k);tv.focus()}));
+renderTabs();renderScreen();
+</script>
+
+</script>

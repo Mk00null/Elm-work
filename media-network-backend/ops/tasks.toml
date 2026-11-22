@@ -1,0 +1,136 @@
+# Vidar work list — run by ops/vidar_taskbot.py (the local bot).
+# Claude writes/updates this list; the bot does the work and logs it to ops/logs/.
+#
+# Fields:
+#   id        unique name
+#   every     daily | weekly:<mon..sun> | twice-weekly:<day>,<day> | monthly:<1-28> | once | manual
+#   run       command (run from media-network-backend/). Omit for checklist items a person must do.
+#   platform  any | windows | linux   (skip when not matching this machine)
+#   needs     env var names that must be set in .env, else the task is "blocked"
+#   timeout   seconds (default 600)
+
+# ---------- daily ----------
+[[task]]
+id = "fleet-health"
+title = "Check every TV is reachable over ADB; log uptime and latency"
+every = "daily"
+run = "python scripts/maintenance/fleet_health.py --quiet"
+
+[[task]]
+id = "backup"
+title = "Encrypted nightly config backup (+ cloud copy if set)"
+every = "daily"
+run = "python scripts/backup/vidar_backup.py"
+
+[[task]]
+id = "server-status-windows"
+title = "Server status: services, containers, ports"
+every = "daily"
+platform = "windows"
+run = "powershell -NoProfile -ExecutionPolicy Bypass -File windows/check-services.ps1"
+
+[[task]]
+id = "server-status-linux"
+title = "Server status: containers, ports"
+every = "daily"
+platform = "linux"
+run = "bash check-services.sh"
+
+[[task]]
+id = "disk-space"
+title = "Warn when the media/server disk is over 85% full"
+every = "daily"
+run = "python -c \"import shutil,sys;u=shutil.disk_usage('.');p=u.used/u.total*100;print(f'{p:.1f}% used');sys.exit(p>85)\""
+
+# ---------- twice weekly ----------
+[[task]]
+id = "tv-maintenance"
+title = "Clear app caches and reboot all TVs"
+every = "twice-weekly:tue,fri"
+run = "bash scripts/maintenance/android-maintenance-fleet.sh"
+
+# ---------- weekly ----------
+[[task]]
+id = "self-test"
+title = "Run the Vidar test suite"
+every = "weekly:sun"
+run = "python -m unittest discover -s tests"
+
+[[task]]
+id = "compose-check"
+title = "Validate docker-compose config"
+every = "weekly:sun"
+run = "docker compose --profile apps --profile media config -q"
+
+[[task]]
+id = "inventory-export"
+title = "Refresh devices.conf from the fleet database"
+every = "weekly:sun"
+run = "python inventory/fleet_db.py --export-devices scripts/maintenance/devices.conf"
+
+[[task]]
+id = "jellyfin-sync"
+title = "Re-apply Jellyfin live TV, plugins and trickplay (idempotent)"
+every = "weekly:mon"
+needs = ["JELLYFIN_API_KEY"]
+run = "python scripts/jellyfin/setup-jellyfin.py"
+
+[[task]]
+id = "nextdns-sync"
+title = "Re-push NextDNS blocklists and denylist (idempotent)"
+every = "weekly:mon"
+platform = "linux"
+needs = ["NEXTDNS_PROFILE_ID", "NEXTDNS_API_KEY"]
+run = "bash scripts/network/configure-nextdns.sh api-push"
+
+# ---------- monthly ----------
+[[task]]
+id = "restore-drill"
+title = "Open the newest backup and list its contents (proves it restores)"
+every = "monthly:1"
+run = "python -c \"import glob,tarfile,os;f=sorted(glob.glob('backups/vidar-*.tar.gz'));print(f[-1] if f else 'no plain backups (encrypted: test with age -d)');[print(m.name) for m in (tarfile.open(f[-1]).getmembers()[:20] if f else [])]\""
+
+[[task]]
+id = "vpn-check"
+title = "Confirm each TV's internet exits through Mullvad"
+every = "monthly:1"
+manual = true
+
+# ---------- one-time setup (checklist; the bot reports which are still open) ----------
+[[task]]
+id = "buy-hardware"
+title = "Buy 16 GB RAM, 4–8 TB drive, one test Onn 4K Pro (optional HDHomeRun, UPS)"
+every = "once"
+manual = true
+
+[[task]]
+id = "install-server"
+title = "Run windows/install-server.ps1 on the OmniDesk"
+every = "once"
+manual = true
+
+[[task]]
+id = "tailscale-policy"
+title = "Paste tailscale/policy.hujson, tag TVs and server, disable TV key expiry"
+every = "once"
+manual = true
+
+[[task]]
+id = "cloudflare-access"
+title = "Login wall + rate limit on jelly.<domain>"
+every = "once"
+needs = ["CLOUDFLARE_API_TOKEN", "CLOUDFLARE_ACCOUNT_ID", "ACCESS_ALLOWED_EMAILS", "VIDAR_DOMAIN"]
+run = "python scripts/security/cloudflare-access.py --domain ${VIDAR_DOMAIN}"
+
+[[task]]
+id = "provision-first-tv"
+title = "provision-tv.py on the test box, then buy the other six"
+every = "once"
+manual = true
+
+[[task]]
+id = "telegram-bot"
+title = "Create the Telegram bot, put token + your ID in .env"
+every = "once"
+needs = ["TELEGRAM_BOT_TOKEN", "TELEGRAM_ALLOWED_IDS"]
+manual = true

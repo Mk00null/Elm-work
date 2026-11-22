@@ -1,0 +1,56 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Vidar Logo Link</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#111216;--surface:#1C1D22;--primary:#9AA0F0;--pc:#3A4192;--border:#5E66BC;--mag:#F070E0;--text:#E4E6EE;--muted:#BFC4D4}
+*{box-sizing:border-box;margin:0}body{background:var(--bg);color:var(--text);font-family:Inter,sans-serif;padding:24px 16px;display:flex;flex-direction:column;gap:24px;align-items:center}
+.panel{width:min(960px,100%);background:var(--surface);border:1px solid #ffffff14;border-radius:14px;padding:20px}
+label{font-size:14px;color:var(--muted)}.inrow{display:flex;gap:10px;margin-top:8px;flex-wrap:wrap}
+input{flex:1;min-width:220px;background:var(--bg);border:2px solid #2C2E36;color:var(--text);border-radius:10px;padding:12px;font-size:15px}
+input:focus{outline:none;border-color:var(--border)}
+button{background:var(--primary);color:#1A1C5C;border:0;border-radius:10px;padding:12px 18px;font-weight:600;cursor:pointer}
+button.ghost{background:transparent;color:var(--text);border:2px solid #2C2E36}
+.status{font-size:13px;margin-top:10px;color:var(--muted)}
+.tv{width:min(960px,100%);aspect-ratio:16/9;border-radius:14px;overflow:hidden;position:relative;background:
+radial-gradient(60% 50% at 78% 40%,rgba(58,65,146,.55),transparent 70%),var(--bg);border:1px solid #ffffff14}
+.top{position:absolute;left:6%;right:6%;top:6%;display:flex;align-items:center;gap:1.4vw}
+.av{width:3.4vw;height:3.4vw;max-width:34px;max-height:34px;border-radius:50%;background:linear-gradient(135deg,var(--pc),var(--mag))}
+.tab{font-size:clamp(9px,1.5vw,15px);padding:.5em 1.1em;border-radius:6px}.tab.on{background:var(--primary);color:#1A1C5C;font-weight:600}
+.brand{margin-left:auto;display:flex;align-items:center;gap:.6em;font-size:clamp(10px,1.7vw,17px);letter-spacing:.3em;color:var(--primary);font-weight:600}
+.brand img{height:3.2em;width:3.2em;object-fit:contain}
+.hero{position:absolute;left:6%;right:6%;top:19%;bottom:22%;border-radius:10px;background:linear-gradient(90deg,#111216ee,#11121666 50%,transparent),linear-gradient(135deg,#1C1D22,#262a66);border:1px solid #ffffff12}
+.hero h1{position:absolute;left:5%;bottom:22%;font-weight:600;font-size:clamp(16px,4vw,40px)}
+.cards{position:absolute;left:6%;right:6%;bottom:5%;display:flex;gap:2%}.cards i{flex:1;aspect-ratio:16/9;border-radius:6px;background:linear-gradient(135deg,var(--pc),var(--bg))}
+.app-icon{display:flex;align-items:center;gap:16px}.app-icon div{width:96px;height:96px;border-radius:22px;background:radial-gradient(circle at 50% 40%,#262a66,var(--bg) 70%);border:2px solid var(--border);display:grid;place-items:center}
+.app-icon img{width:76px;height:76px;object-fit:contain}
+code{background:var(--bg);padding:2px 6px;border-radius:6px;font-size:13px}
+</style></head><body>
+<div class="panel">
+  <label for="u">Logo image link (PNG / JPG / WebP — transparent PNG looks best)</label>
+  <div class="inrow"><input id="u" placeholder="https://…/my-logo.png"><button id="apply">Apply</button><button class="ghost" id="reset">Use built-in emblem</button></div>
+  <div class="status" id="st">Showing built-in emblem.</div>
+</div>
+<div class="tv">
+  <div class="top"><div class="av"></div><span class="tab on">Home</span><span class="tab">Categories</span><span class="tab">Movies</span><span class="tab">Shows</span><span class="tab">Live</span>
+    <div class="brand"><img id="logo" alt="Vidar logo">VIDAR</div></div>
+  <div class="hero"><h1>Featured Title</h1></div>
+  <div class="cards"><i></i><i></i><i></i><i></i><i></i></div>
+</div>
+<div class="panel app-icon"><div><img id="icon" alt=""></div>
+  <p style="font-size:14px;color:var(--muted)">App icon preview. In the real app, paste the same link into
+  <code>res/values/strings.xml → brand_logo_url</code> and rebuild; the top bar loads it (falls back to the emblem if the link fails).</p></div>
+<script>
+const DEFAULT='../branding/vidar-emblem.svg', KEY='vidarLogoUrl';
+const u=document.getElementById('u'),st=document.getElementById('st'),imgs=[logo,icon];
+function set(src,custom){
+  const t=new Image();
+  t.onload=()=>{imgs.forEach(i=>i.src=src);st.textContent=custom?'✔ Logo loaded from link.':'Showing built-in emblem.'};
+  t.onerror=()=>{imgs.forEach(i=>i.src=DEFAULT);st.textContent='✖ Could not load that link (check it ends in an image and allows hotlinking). Using emblem.'};
+  t.src=src;
+}
+apply.onclick=()=>{const v=u.value.trim();if(!v)return;try{localStorage.setItem(KEY,v)}catch(e){}set(v,true)};
+reset.onclick=()=>{u.value='';try{localStorage.removeItem(KEY)}catch(e){}set(DEFAULT,false)};
+u.onkeydown=e=>{if(e.key==='Enter')apply.click()};
+let saved='';try{saved=localStorage.getItem(KEY)||''}catch(e){}
+if(saved){u.value=saved;set(saved,true)}else set(DEFAULT,false);
+</script></body></html>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Vidar server settings. Leave jellyfin_server_url empty to run on the built-in sample catalog.
+     Use the server's Tailscale address, e.g. http://100.64.0.1:8096
+     Keep real passwords out of git: put them in a local copy or use a per-location Jellyfin user. -->
+<resources>
+    <string name="jellyfin_server_url" translatable="false"></string>
+    <string name="jellyfin_username" translatable="false"></string>
+    <string name="jellyfin_password" translatable="false"></string>
+    <string name="vidar_device_name" translatable="false">Vidar TV</string>
+</resources>

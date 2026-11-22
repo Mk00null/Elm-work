@@ -1,0 +1,28 @@
+# =============================================================================
+# Cloudflare Tunnel config template.
+# setup-tunnels.sh fills <TUNNEL_ID>, <DOMAIN> and installs it to
+# /etc/cloudflared/config.yml.
+#
+# NOTE: RustDesk uses raw TCP/UDP, not HTTP. Cloudflare's free tunnel only
+# proxies HTTP(S) for public hostnames; a "tcp://" ingress requires every
+# client to run `cloudflared access tcp`, and UDP 21116 cannot be tunneled.
+# For real RustDesk clients, port-forward 21115-21117/tcp + 21116/udp on
+# your router (DNS-only / grey-cloud record) instead.
+# =============================================================================
+tunnel: <TUNNEL_ID>
+credentials-file: /etc/cloudflared/<TUNNEL_ID>.json
+
+ingress:
+  # RustDesk ID/signal service (as requested; see note above)
+  - hostname: support.<DOMAIN>.com
+    service: http://localhost:21116
+
+  # Jellyfin web UI / API
+  - hostname: jelly.<DOMAIN>.com
+    service: http://localhost:8096
+    originRequest:
+      noTLSVerify: false
+      connectTimeout: 30s
+
+  # Required catch-all
+  - service: http_status:404

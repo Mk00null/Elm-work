@@ -1,0 +1,9 @@
+# Fleet maintenance — Tuesdays & Fridays at 04:00 local time.
+# Install (edit path first):  crontab -l | cat - crontab.txt | crontab -
+# Fields: min hour dom mon dow
+PATH=/usr/local/bin:/usr/bin:/bin
+MAINT=/opt/media-network-backend/scripts/maintenance
+
+0 4 * * 2,5  cd $MAINT && ./android-maintenance-fleet.sh >> $MAINT/cron.log 2>&1
+# Health check every 15 minutes
+*/15 * * * * cd $MAINT && /usr/bin/python3 fleet_health.py --quiet >> $MAINT/cron.log 2>&1

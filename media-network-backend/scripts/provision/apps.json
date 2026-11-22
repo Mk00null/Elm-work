@@ -1,0 +1,32 @@
+{
+  "_note": "Apps provision-tv.py makes sure are on every box. 'apk' = sideload from scripts/provision/apks/<file>; 'play' = open its Play Store page on the TV (Play installs can't be scripted). Package IDs marked verify:true are best-known IDs — confirm on the first box with: adb shell pm list packages | grep <name>",
+  "core": [
+    {"name": "Vidar TV",            "package": "com.vidar.tv",                     "source": "apk",  "apk": "vidar-tv.apk"},
+    {"name": "Tailscale",           "package": "com.tailscale.ipn",                "source": "play"},
+    {"name": "RustDesk",            "package": "com.carriez.flutter_hbb",          "source": "apk",  "apk": "rustdesk.apk"},
+    {"name": "Jellyfin",            "package": "org.jellyfin.androidtv",           "source": "play"},
+    {"name": "TiviMate",            "package": "ar.tvplayer.tv",                   "source": "play"},
+    {"name": "Stremio",             "package": "com.stremio.one",                  "source": "apk",  "apk": "stremio.apk", "verify": true},
+    {"name": "Projectivy Launcher", "package": "com.spocky.projengmenu",           "source": "play"}
+  ],
+  "free_tv": [
+    {"name": "Pluto TV",            "package": "tv.pluto.android",                 "source": "play"},
+    {"name": "Tubi",                "package": "com.tubitv",                       "source": "play"},
+    {"name": "Plex",                "package": "com.plexapp.android",              "source": "play"},
+    {"name": "The Roku Channel",    "package": "com.roku.web.trc",                 "source": "play", "verify": true},
+    {"name": "Xumo Play",           "package": "com.xumo.xumo",                    "source": "play", "verify": true},
+    {"name": "Samsung TV Plus",     "package": "com.samsung.android.tvplus",       "source": "play", "verify": true},
+    {"name": "Haystack News",       "package": "com.haystack.android",             "source": "play", "verify": true},
+    {"name": "ViX",                 "package": "com.univision.prendetv",           "source": "play", "verify": true},
+    {"name": "Canela.TV",           "package": "com.canela.ott",                   "source": "play", "verify": true},
+    {"name": "Kanopy",              "package": "com.kanopy",                       "source": "play"},
+    {"name": "Hoopla",              "package": "com.hoopladigital.android",        "source": "play"}
+  ],
+  "extras": [
+    {"name": "Kodi",                "package": "org.xbmc.kodi",                    "source": "play"},
+    {"name": "Moonlight",           "package": "com.limelight",                    "source": "play"},
+    {"name": "Immich",              "package": "app.alextran.immich",              "source": "play"},
+    {"name": "Audiobookshelf",      "package": "com.audiobookshelf.app",           "source": "play", "verify": true},
+    {"name": "Home Assistant",      "package": "io.homeassistant.companion.android","source": "play"}
+  ]
+}

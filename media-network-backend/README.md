@@ -13,6 +13,7 @@ home server (HP OmniDesk, Windows 11).
 | `scripts/network/` | NextDNS profile + device config |
 | `scripts/backup/` | Nightly config backup (+ optional encrypted cloud copy) |
 | `inventory/fleet_db.py` | Device database (location, IP, RustDesk ID…) |
+| `ops/tasks.toml` + `ops/vidar_taskbot.py` | **The work list and the local bot that runs it** (logs in `ops/logs/`) |
 | `dashboard/` | Vidar Dashboard web panel (port 8080) |
 | `bot/` | Vidar Assistant Telegram bot (Ollama) |
 | `vidar-tv/` | Vidar TV Android app (Jet Stream fork, Jellyfin-backed) |

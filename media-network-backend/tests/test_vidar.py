@@ -114,6 +114,20 @@ class SecurityTest(unittest.TestCase):
         self.assertEqual(r.returncode, 0, r.stderr)
 
 
+class TaskbotTest(unittest.TestCase):
+    def test_list_and_schedule(self):
+        bot = load("taskbot", "ops/vidar_taskbot.py")
+        tasks = bot.load_tasks()
+        state = {"last_run": {}, "done": []}
+        tuesday, wednesday = __import__("datetime").date(2026, 11, 24), __import__("datetime").date(2026, 11, 25)
+        due = lambda d: {t["id"] for t in tasks if bot.is_due(t, state, d)}
+        self.assertIn("tv-maintenance", due(tuesday))
+        self.assertNotIn("tv-maintenance", due(wednesday))
+        self.assertIn("fleet-health", due(wednesday))
+        state["done"].append("buy-hardware")
+        self.assertNotIn("buy-hardware", due(wednesday))
+
+
 class CatalogTest(unittest.TestCase):
     def test_apps_json(self):
         cat = json.loads((ROOT / "scripts/provision/apps.json").read_text())

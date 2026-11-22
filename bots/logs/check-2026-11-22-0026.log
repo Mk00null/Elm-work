@@ -1,0 +1,39 @@
+THE ELM - inventory check    2026-11-22 00:26
+
+=== Elm_Housekeeping_Inventory.docx ===
+  [PASS] document.xml parses                    
+  [PASS] tables share a column count            5 columns
+  [PASS] no duplicate part numbers              70 unique
+  [PASS] every item has Spanish                 
+  [WARN] rows with no part number               15 of 85
+  [FAIL] Spanish matches the glossary           1: Makeup Remover Wipes Sache -> 'toallita' (superseded by 'toalla de cara')
+  [PASS] warning kept: shower brackets case size 
+  [PASS] warning kept: lid for the 10oz cup     
+  [PASS] warning kept: towel hanger card number 
+
+=== LaQuinta_Frisco_Housekeeping_Inventory.docx ===
+  [PASS] document.xml parses                    
+  [PASS] tables share a column count            5 columns
+  [PASS] no duplicate part numbers              60 unique
+  [PASS] every item has Spanish                 
+  [WARN] rows with no part number               5 of 65
+  [FAIL] Spanish matches the glossary           1: Makeup Remover Wipes Sache -> 'toallita' (superseded by 'toalla de cara')
+
+=== Elm_Linen_Towel_Inventory.docx ===
+  [PASS] document.xml parses                    
+  [PASS] tables share a column count            4 columns
+  [PASS] no duplicate part numbers              0 unique
+  [PASS] every item has Spanish                 
+  [WARN] rows with no part number               52 of 52
+  [PASS] Spanish matches the glossary           
+
+=== ElmBar_Code_v6.gs ===
+  [PASS] creates no new form or sheet           QR stays valid
+  [PASS] opens by id: FormApp.openById          
+  [PASS] opens by id: SpreadsheetApp.openById   
+  [PASS] formatDateShort handles a Date         
+  [PASS] top-level functions                    56
+
+----------------------------------------------------------
+pass 21   warn 3   fail 2
+Something is wrong. Read the FAIL lines above before sending a sheet out.

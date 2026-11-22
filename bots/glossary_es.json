@@ -1,0 +1,47 @@
+{
+  "_source": "Elm damages 2026-09.xlsx (Google Drive). The housekeepers' own Spanish, kept word for word in that file. Six people - Yesenia, Sofia, Alma, Nathaly, Seleny, Marilu - use these terms independently. Treat that file as the vocabulary of record.",
+  "_rule": "If the Spanish cell for one of these items does not contain the approved term, the sheet and the damage reports cannot be reconciled.",
+  "require": {
+    "Washcloth": "toalla de cara",
+    "Hand Towel": "toalla mediana",
+    "Bath Towel": "toalla grande",
+    "Fitted Sheet": "sábana con resorte",
+    "Flat Sheet": "sábana grande",
+    "Duvet Cover": "duvet",
+    "Pillowcase": "funda de almohada",
+    "Pillow": "almohada",
+    "Mattress Protector": "protector de colchón"
+  },
+  "forbid": {
+    "toallita": "superseded by 'toalla de cara'",
+    "manopla": "superseded by 'toalla de cara'",
+    "toalla de manos": "superseded by 'toalla mediana'",
+    "toalla de baño": "superseded by 'toalla grande'",
+    "sábana ajustable": "superseded by 'sábana con resorte'",
+    "sábana plana —": "superseded by 'sábana grande (plana)'"
+  },
+  "replacement_value_usd": {
+    "_source": "approved charge list in the same damages workbook",
+    "Washcloth": 8,
+    "Hand Towel": 15,
+    "Bath Towel": 25,
+    "Sheet": 45,
+    "Duvet Cover": 30,
+    "Pillowcase": 18,
+    "Pillow": 45
+  },
+  "_scope": "The forbid list applies only to linen and towel rows. Elsewhere the same word can be right: 'toallitas desmaquillantes' is the correct name for makeup remover wipes.",
+  "scope_keywords": [
+    "towel",
+    "washcloth",
+    "sheet",
+    "duvet",
+    "pillow",
+    "bath mat",
+    "blanket",
+    "bathrobe",
+    "protector",
+    "bed skirt",
+    "comforter"
+  ]
+}

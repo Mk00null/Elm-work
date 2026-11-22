@@ -174,6 +174,29 @@ Always print `runs` and text before choosing an index.
 
 ---
 
+## 7b. The task list and the bot
+
+`TASKS.md` is the checklist for this lane, in the tree so it survives a
+session ending. `bots/check_inventory.py` runs its automated half and
+writes a log to `bots/logs/`.
+
+    pip install python-docx
+    python bots/check_inventory.py
+
+Run it before sending any sheet to anyone, and after any Google Docs
+round trip. Exit code 1 means something failed. Nine checks, including
+the two invariants worth keeping: the bar script creates no form or sheet
+(the printed QR depends on it), and `formatDateShort` handles a real
+`Date` (the nightly reminder depends on it).
+
+Anything you find yourself doing by hand a second time belongs in that
+bot rather than in a session.
+
+**Nothing here is scheduled.** Roberto's hold on daily-operations changes
+stands until his new PC; the bot is run by hand.
+
+---
+
 ## 8. If you only do three things
 
 1. **Seed the bar roster** in dashboard J–L and confirm the 9:30pm trigger
